@@ -1,10 +1,45 @@
 services:
+  postgres:
+    image: postgres:16-alpha
+    environment:
+      - POSTGRES_DB: triage
+      - POSTGRES_USER: triage
+      - POSTGRES_PASSWORD: triage
+    ports:
+      -"5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U triage"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build: ./backend
     ports:
       - "8080:8080"
     environment:
       PORT: "8080"
+      DATABASE_URL: "postgresql+psycopg2://triage:triage@postgres:5432/triage"
+      CLERK_SECRET_KEY: "sk_test_placeholder"
+      OPERATOR_EMAIL_ALLOWLIST: "admin@example.com"
+      API_KEY: "dev-api-key"
+      RESEND_API_KEY: ""
+      RESEND_WEBHOOK_SECRET: ""
+      QSTASH_TOKEN: ""
+      QSTASH_CURRENT_SIGNING_KEY: ""
+      QSTASH_NEXT_SIGNING_KEY: ""
+      GCP_PROJECT_ID: ""
+      VERTEX_LOCATION: "global"
+      GOOGLE_GENAI_USE_VERTEXAI: "false"
+      GEMINI_API_KEY: ""
+      GEMINI_TIMEOUT_SECONDS: "15"
+      RATE_LIMIT_TICKETS: "10/minute"
+      QSTASH_ENABLED: "false"
+      APP_BASE_URL: "http://localhost:3000"
+      WORKER_BASE_URL: "http://localhost:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend:
     build:
