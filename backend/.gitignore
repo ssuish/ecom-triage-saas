@@ -1,0 +1,2 @@
+# Backend-local overrides (see root .gitignore for shared rules)
+.venv/
