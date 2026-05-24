@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.main import app
 from app.database import Base, get_db
+from app.dependencies import require_clerk_agent, require_api_key, require_magic_token
 
 TEST_DB_URL = "sqlite+pysqlite:///:memory:"
 engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
@@ -35,6 +36,8 @@ async def client(db_session):
             pass
 
     app.dependency_overrides[get_db] = override_db
+    app.dependency_overrides[require_clerk_agent] = lambda: FAKE_AGENT
+    app.dependency_overrides[require_api_key] = lambda: True
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
