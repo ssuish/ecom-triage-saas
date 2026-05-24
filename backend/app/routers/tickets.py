@@ -1,4 +1,5 @@
 import uuid
+from fastapi.requests import Request
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -12,12 +13,14 @@ from app.models.ticket import Ticket, TicketStatus
 from app.schemas.ticket import AssignPayload, ReplyPayload, TicketCreate, TicketOut
 from app.models.agent import Agent
 from app.schemas.ticket import TicketStatusOut
+from app.middleware.rate_limit import TICKET_CREATE_LIMIT, limiter
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
-
 @router.post("", response_model=TicketOut, status_code=201)
+@limiter.limit(TICKET_CREATE_LIMIT)
 def create_ticket(
+    request: Request,
     body: TicketCreate,
     db: Session = Depends(get_db),
     _: bool = Depends(require_api_key),

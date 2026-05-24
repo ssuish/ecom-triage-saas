@@ -1,8 +1,13 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings
+
+ROOT_DIR = Path(__file__).resolve().parents[2]
+
 
 class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+pysqlite:///:memory:"
     CLERK_SECRET_KEY: str = "test_secret"
+    CLERK_AUTHORIZED_PARTIES: str = ""
     OPERATOR_EMAIL_ALLOWLIST: str = ""
     API_KEY: str = "test-api-key"
     RESEND_API_KEY: str = ""
@@ -20,6 +25,11 @@ class Settings(BaseSettings):
     APP_BASE_URL: str = "http://localhost:3000"
     WORKER_BASE_URL: str = "http://localhost:8080"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {
+        "env_file": ROOT_DIR / ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+    }
+
 
 settings = Settings()

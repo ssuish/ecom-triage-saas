@@ -69,3 +69,12 @@ async def client_with_magic_token(db_session):
         yield ac
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    from app.middleware.rate_limit import limiter
+
+    limiter.reset()
+    yield
+    limiter.reset()
