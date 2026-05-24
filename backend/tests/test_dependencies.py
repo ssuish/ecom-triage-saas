@@ -1,7 +1,7 @@
 import pytest
 
 from fastapi import HTTPException
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from app.dependencies import require_api_key, require_magic_token
 
 def test_require_api_key_raises_401_on_wrong_key():

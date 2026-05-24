@@ -6,7 +6,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.database import Base, get_db
-from app.dependencies import require_clerk_agent, require_api_key, require_magic_token
+from app.dependencies import require_clerk_agent, require_api_key
 
 TEST_DB_URL = "sqlite+pysqlite:///:memory:"
 engine = create_engine(

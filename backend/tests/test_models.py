@@ -2,9 +2,6 @@ from app.models.agent import Agent
 from app.models.ticket import (
     Ticket,
     TicketStatus,
-    TicketPriority,
-    TicketCategory,
-    TicketSource,
 )
 from app.models.magic_token import MagicToken
 
