@@ -2,13 +2,18 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.database import Base, get_db
 from app.dependencies import require_clerk_agent, require_api_key, require_magic_token
 
 TEST_DB_URL = "sqlite+pysqlite:///:memory:"
-engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    TEST_DB_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestingSession = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -23,7 +28,6 @@ def db_session():
         Base.metadata.drop_all(bind=engine)
 
 
-# Fake agent returned by Clerk auth override
 FAKE_AGENT = {"sub": "user_test123", "email": "agent@example.com"}
 
 
