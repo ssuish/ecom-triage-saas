@@ -136,3 +136,137 @@ async def test_get_ticket_by_id(client):
 async def test_get_ticket_not_found(client):
     response = await client.get("/tickets/00000000-0000-0000-0000-000000000000")
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_assign_ticket(client, db_session):
+    from app.models.agent import Agent
+
+    agent = Agent(email="a@test.com", name="Alice")
+    db_session.add(agent)
+    db_session.commit()
+
+    create_resp = await client.post(
+        "/tickets",
+        json={
+            "subject": "S",
+            "body": "B",
+            "customer_email": "c@c.com",
+            "customer_name": "C",
+        },
+        headers={"x-api-key": "test-api-key"},
+    )
+
+    ticket_id = create_resp.json()["id"]
+
+    response = await client.patch(
+        f"/tickets/{ticket_id}/assign", json={"agent_id": agent.id}
+    )
+    assert response.status_code == 200
+    assert response.json()["assigned_agent_id"] == agent.id
+
+
+@pytest.mark.asyncio
+async def test_assign_ticket_unknown_agent_raises_404(client):
+    create_resp = await client.post(
+        "/tickets",
+        json={
+            "subject": "S",
+            "body": "B",
+            "customer_email": "c@c.com",
+            "customer_name": "C",
+        },
+        headers={"x-api-key": "test-api-key"},
+    )
+    ticket_id = create_resp.json()["id"]
+    response = await client.patch(
+        f"/tickets/{ticket_id}/assign",
+        json={"agent_id": "00000000-0000-0000-0000-000000000000"},
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_reply_sets_in_progress(client):
+    create_resp = await client.post(
+        "/tickets",
+        json={
+            "subject": "S",
+            "body": "B",
+            "customer_email": "c@c.com",
+            "customer_name": "C",
+        },
+        headers={"x-api-key": "test-api-key"},
+    )
+    ticket_id = create_resp.json()["id"]
+
+    response = await client.patch(
+        f"/tickets/{ticket_id}/reply", json={"agent_reply": "Thanks for reaching out!"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["agent_reply"] == "Thanks for reaching out!"
+    assert data["status"] == "in_progress"
+
+
+@pytest.mark.asyncio
+async def test_resolve_sets_resolved(client):
+    create_resp = await client.post(
+        "/tickets",
+        json={
+            "subject": "S",
+            "body": "B",
+            "customer_email": "c@c.com",
+            "customer_name": "C",
+        },
+        headers={"x-api-key": "test-api-key"},
+    )
+    ticket_id = create_resp.json()["id"]
+
+    response = await client.patch(f"/tickets/{ticket_id}/resolve", json={})
+    assert response.status_code == 200
+    assert response.json()["status"] == "resolved"
+
+
+@pytest.mark.asyncio
+async def test_customer_status_with_valid_token(client, db_session):
+    from app.models.magic_token import MagicToken
+
+    create_resp = await client.post(
+        "/tickets",
+        json={
+            "subject": "My issue",
+            "body": "Details",
+            "customer_email": "c@c.com",
+            "customer_name": "C",
+        },
+        headers={"x-api-key": "test-api-key"},
+    )
+    ticket_id = create_resp.json()["id"]
+    mt = db_session.query(MagicToken).filter(MagicToken.ticket_id == ticket_id).first()
+
+    response = await client.get(f"/tickets/{ticket_id}/status?token={mt.token}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["subject"] == "My issue"
+    assert "assigned_agent_id" not in data
+    assert "escalate" not in data
+    assert "ai_draft_reply" not in data
+
+
+@pytest.mark.asyncio
+async def test_customer_status_invalid_token_returns_404(client):
+    create_resp = await client.post(
+        "/tickets",
+        json={
+            "subject": "S",
+            "body": "B",
+            "customer_email": "c@c.com",
+            "customer_name": "C",
+        },
+        headers={"x-api-key": "test-api-key"},
+    )
+    ticket_id = create_resp.json()["id"]
+
+    response = await client.get(f"/tickets/{ticket_id}/status?token=bad-token")
+    assert response.status_code == 404
