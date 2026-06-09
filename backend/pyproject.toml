@@ -10,11 +10,11 @@ dependencies = [
     "httpx>=0.28.1,<1.0.0",
     "psycopg2-binary>=2.9.12,<3.0.0",
     "pydantic-settings>=2.14.1,<3.0.0",
-    "qstash>=3.4.0,<4.0.0",
+    "google-cloud-tasks>=2.20.0,<3.0.0",
+    "google-auth>=2.40.0,<3.0.0",
     "resend>=2.30.1,<3.0.0",
     "slowapi>=0.1.9",
     "sqlalchemy>=2.0.49,<3.0.0",
-    "svix>=1.94.0,<2.0.0",
     "uvicorn[standard]>=0.47.0,<1.0.0",
 ]
 
