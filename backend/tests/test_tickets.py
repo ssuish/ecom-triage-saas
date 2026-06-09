@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 
 
 @pytest.mark.asyncio
@@ -270,3 +271,52 @@ async def test_customer_status_invalid_token_returns_404(client):
 
     response = await client.get(f"/tickets/{ticket_id}/status?token=bad-token")
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+@patch("app.routers.tickets.enqueue_job")
+async def test_create_ticket_enqueues_triage_when_enabled(mock_enqueue, client, monkeypatch):
+    from app.routers import tickets as tickets_module
+    from app.services.tasks import JobType
+
+    monkeypatch.setattr(tickets_module.settings, "CLOUD_TASKS_ENABLED", True)
+
+    payload = {
+        "subject": "Job test",
+        "body": "Body",
+        "customer_email": "j@j.com",
+        "customer_name": "J",
+    }
+    response = await client.post(
+        "/tickets", json=payload, headers={"x-api-key": "test-api-key"}
+    )
+    assert response.status_code == 201
+    ticket_id = response.json()["id"]
+    mock_enqueue.assert_called_once()
+    args = mock_enqueue.call_args
+    assert args[0][0] == JobType.AI_TRIAGE
+    assert args[0][1] == {"ticket_id": ticket_id}
+
+
+@pytest.mark.asyncio
+@patch("app.routers.tickets.enqueue_job")
+async def test_resolve_enqueues_email_when_enabled(mock_enqueue, client, monkeypatch):
+    from app.routers import tickets as tickets_module
+    from app.services.tasks import JobType
+
+    monkeypatch.setattr(tickets_module.settings, "CLOUD_TASKS_ENABLED", True)
+
+    create_resp = await client.post(
+        "/tickets",
+        json={"subject": "S", "body": "B", "customer_email": "r@r.com", "customer_name": "R"},
+        headers={"x-api-key": "test-api-key"},
+    )
+    ticket_id = create_resp.json()["id"]
+
+    await client.patch(f"/tickets/{ticket_id}/reply", json={"agent_reply": "Fixed!"})
+
+    mock_enqueue.reset_mock()
+    response = await client.patch(f"/tickets/{ticket_id}/resolve", json={})
+    assert response.status_code == 200
+    mock_enqueue.assert_called_once()
+    assert mock_enqueue.call_args[0][0] == JobType.OUTBOUND_EMAIL

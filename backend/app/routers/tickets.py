@@ -14,6 +14,9 @@ from app.schemas.ticket import AssignPayload, ReplyPayload, TicketCreate, Ticket
 from app.models.agent import Agent
 from app.schemas.ticket import TicketStatusOut
 from app.middleware.rate_limit import TICKET_CREATE_LIMIT, limiter
+from app.routers.workers import EmailJobPayload, execute_email, execute_triage, _magic_link
+from app.services.tasks import JobType, enqueue_job
+from app.settings import settings
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -38,6 +41,13 @@ def create_ticket(
     db.add(magic_token)
     db.commit()
     db.refresh(ticket)
+
+    if settings.CLOUD_TASKS_ENABLED:
+        enqueue_job(JobType.AI_TRIAGE, {"ticket_id": ticket.id})
+    else:
+        execute_triage(ticket.id, db)
+        db.refresh(ticket)
+
     return ticket
 
 
@@ -141,7 +151,23 @@ def resolve_ticket(
     ticket.status = TicketStatus.resolved
     db.commit()
     db.refresh(ticket)
-    # TODO:push outbound email to qstash
+
+    if ticket.customer_email:
+        mt = db.query(MagicToken).filter(MagicToken.ticket_id == ticket.id).first()
+        if mt:
+            magic_link = _magic_link(ticket.id, mt.token)
+            email_payload = EmailJobPayload(
+                ticket_id=ticket.id,
+                to=ticket.customer_email,
+                type="reply",
+                agent_reply=ticket.agent_reply,
+                magic_link=magic_link,
+            )
+            if settings.CLOUD_TASKS_ENABLED:
+                enqueue_job(JobType.OUTBOUND_EMAIL, email_payload.model_dump())
+            else:
+                execute_email(email_payload, db)
+
     return ticket
 
 
