@@ -7,6 +7,7 @@ from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.database import Base, get_db
 from app.dependencies import require_clerk_agent, require_api_key
+from app.worker_auth import verify_cloud_tasks_oidc
 
 TEST_DB_URL = "sqlite+pysqlite:///:memory:"
 engine = create_engine(
@@ -31,6 +32,10 @@ def db_session():
 FAKE_AGENT = {"sub": "user_test123", "email": "agent@example.com"}
 
 
+async def _verify_oidc_ok() -> None:
+    return None
+
+
 @pytest.fixture
 async def client(db_session):
     def override_db():
@@ -42,6 +47,7 @@ async def client(db_session):
     app.dependency_overrides[get_db] = override_db
     app.dependency_overrides[require_clerk_agent] = lambda: FAKE_AGENT
     app.dependency_overrides[require_api_key] = lambda: True
+    app.dependency_overrides[verify_cloud_tasks_oidc] = _verify_oidc_ok
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
