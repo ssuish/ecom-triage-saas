@@ -1,0 +1,591 @@
+openapi: 3.1.0
+info:
+  title: Triage API
+  version: 0.1.0
+  description: |
+    AI-assisted support ticketing API for small teams.
+
+    Auth models:
+    - Public form intake uses `x-api-key`
+    - Operators use Clerk JWT (`Authorization: Bearer`)
+    - Customers use magic token header (`x-magic-token`) on status endpoint
+    - Cloud Tasks workers use OIDC Bearer JWT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+  - url: https://api.yourdomain.com
+    description: Production
+
+tags:
+  - name: health
+  - name: tickets
+  - name: agents
+  - name: workers
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Health check
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /tickets:
+    post:
+      tags: [tickets]
+      summary: Create ticket (public form)
+      operationId: createTicket
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TicketCreate"
+      responses:
+        "201":
+          description: Ticket created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketOut"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+    get:
+      tags: [tickets]
+      summary: List tickets (operator)
+      operationId: listTickets
+      security:
+        - ClerkBearer: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/TicketStatus"
+        - name: priority
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Paginated ticket list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /tickets/{ticket_id}:
+    get:
+      tags: [tickets]
+      summary: Get ticket (operator)
+      operationId: getTicket
+      security:
+        - ClerkBearer: []
+      parameters:
+        - $ref: "#/components/parameters/TicketId"
+      responses:
+        "200":
+          description: Ticket details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketOut"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tickets/{ticket_id}/assign:
+    patch:
+      tags: [tickets]
+      summary: Assign ticket to agent
+      operationId: assignTicket
+      security:
+        - ClerkBearer: []
+      parameters:
+        - $ref: "#/components/parameters/TicketId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignPayload"
+      responses:
+        "200":
+          description: Ticket assigned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketOut"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /tickets/{ticket_id}/reply:
+    patch:
+      tags: [tickets]
+      summary: Save agent reply draft
+      operationId: saveReply
+      security:
+        - ClerkBearer: []
+      parameters:
+        - $ref: "#/components/parameters/TicketId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplyPayload"
+      responses:
+        "200":
+          description: Reply saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketOut"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /tickets/{ticket_id}/resolve:
+    patch:
+      tags: [tickets]
+      summary: Resolve ticket
+      operationId: resolveTicket
+      security:
+        - ClerkBearer: []
+      parameters:
+        - $ref: "#/components/parameters/TicketId"
+      responses:
+        "200":
+          description: Ticket resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketOut"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tickets/{ticket_id}/status:
+    get:
+      tags: [tickets]
+      summary: Customer ticket status (magic token)
+      operationId: getTicketStatus
+      security:
+        - MagicTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TicketId"
+      responses:
+        "200":
+          description: Stripped customer-facing ticket status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketStatusOut"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /agents:
+    get:
+      tags: [agents]
+      summary: List agents
+      operationId: listAgents
+      security:
+        - ClerkBearer: []
+      responses:
+        "200":
+          description: Agent roster
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentOut"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /workers/triage:
+    post:
+      tags: [workers]
+      summary: Run AI triage worker job
+      operationId: workerTriage
+      security:
+        - WorkerOidc: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TriageJobPayload"
+      responses:
+        "200":
+          description: Triage executed or skipped (idempotent)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  skipped:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /workers/email:
+    post:
+      tags: [workers]
+      summary: Send outbound email worker job
+      operationId: workerEmail
+      security:
+        - WorkerOidc: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailJobPayload"
+      responses:
+        "200":
+          description: Email sent or skipped (idempotent)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  skipped:
+                    type: string
+        "400":
+          description: Invalid recipient or job type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Public form intake API key
+    ClerkBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Clerk session JWT for operators
+    MagicTokenAuth:
+      type: apiKey
+      in: header
+      name: x-magic-token
+      description: Per-ticket customer magic token (not query string)
+    WorkerOidc:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Cloud Tasks OIDC JWT
+
+  parameters:
+    TicketId:
+      name: ticket_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Authenticated but not permitted
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationError"
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        detail:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: object
+
+    ValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                items:
+                  oneOf:
+                    - type: string
+                    - type: integer
+              msg:
+                type: string
+              type:
+                type: string
+
+    TicketCreate:
+      type: object
+      required: [subject, body, customer_email, customer_name]
+      properties:
+        subject:
+          type: string
+          maxLength: 500
+        body:
+          type: string
+          maxLength: 10000
+        customer_email:
+          type: string
+          format: email
+        customer_name:
+          type: string
+          maxLength: 255
+
+    TicketOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        subject:
+          type: string
+        body:
+          type: string
+        source:
+          $ref: "#/components/schemas/TicketSource"
+        status:
+          $ref: "#/components/schemas/TicketStatus"
+        priority:
+          $ref: "#/components/schemas/TicketPriority"
+        category:
+          $ref: "#/components/schemas/TicketCategory"
+        escalate:
+          type: boolean
+        ai_draft_reply:
+          type: string
+          nullable: true
+        agent_reply:
+          type: string
+          nullable: true
+        assigned_agent_id:
+          type: string
+          format: uuid
+          nullable: true
+        customer_email:
+          type: string
+          format: email
+          nullable: true
+        customer_name:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TicketStatusOut:
+      type: object
+      description: Stripped customer-facing view (no PII beyond subject/reply)
+      properties:
+        id:
+          type: string
+          format: uuid
+        subject:
+          type: string
+        status:
+          $ref: "#/components/schemas/TicketStatus"
+        agent_reply:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TicketPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TicketOut"
+        total:
+          type: integer
+          minimum: 0
+
+    AssignPayload:
+      type: object
+      required: [agent_id]
+      properties:
+        agent_id:
+          type: string
+          format: uuid
+
+    ReplyPayload:
+      type: object
+      required: [agent_reply]
+      properties:
+        agent_reply:
+          type: string
+          maxLength: 10000
+
+    AgentOut:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+
+    TriageJobPayload:
+      type: object
+      required: [ticket_id]
+      properties:
+        ticket_id:
+          type: string
+          format: uuid
+
+    EmailJobPayload:
+      type: object
+      required: [ticket_id, to, type, magic_link]
+      properties:
+        ticket_id:
+          type: string
+          format: uuid
+        to:
+          type: string
+          format: email
+          description: Must match ticket.customer_email
+        type:
+          type: string
+          enum: [confirmation, reply]
+        agent_reply:
+          type: string
+          nullable: true
+          maxLength: 10000
+        magic_link:
+          type: string
+          format: uri
+
+    TicketSource:
+      type: string
+      enum: [email, form]
+
+    TicketStatus:
+      type: string
+      enum: [open, in_progress, resolved]
+
+    TicketPriority:
+      type: string
+      enum: [low, medium, high]
+
+    TicketCategory:
+      type: string
+      enum: [billing, technical, general, other]
