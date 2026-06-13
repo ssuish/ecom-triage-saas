@@ -31,7 +31,7 @@ Triage gives a small support team a single place to handle customer requests:
 - **Customers stay informed** — Magic-link status pages and transactional email; no portal login.
 - **Small-team fit** — One backend, one database, serverless async — designed for GCP free tiers and Neon Postgres.
 
-Under the hood: FastAPI on Cloud Run, React on Firebase Hosting, Neon Postgres (prod), Cloud Tasks workers, Vertex Gemini (structured JSON triage), Clerk for agents, and Resend for outbound email.
+Under the hood: FastAPI on Cloud Run, React on Firebase Hosting, Neon Postgres (prod), Cloud Tasks workers, **`google-genai`** with **`gemini-3.1-flash-lite-preview`** (structured JSON triage), Clerk for agents, and Resend for outbound email.
 
 ---
 
@@ -89,7 +89,7 @@ flowchart TD
 | ----- | ----------------------------------------------------------------------- |
 | API   | Python 3.13, FastAPI, uv                                                |
 | Data  | Docker Postgres (local); Neon Postgres (prod, future)                 |
-| AI    | `google-genai`, Vertex AI (prod), optional API key (local)              |
+| AI    | `google-genai` SDK — `gemini-3.1-flash-lite-preview`; Vertex + ADC (prod), `GEMINI_API_KEY` (local AI Studio) |
 | Queue | GCP Cloud Tasks (OIDC HTTP targets)                                     |
 | Email | Resend (outbound only in v1)                                    |
 | Auth  | Clerk (operators), magic tokens (customers), API key (public form)      |
@@ -126,7 +126,34 @@ docker compose up --build
 - Frontend: [http://localhost:3000](http://localhost:3000) (health-check placeholder)
 - Database: Docker Postgres — not Neon
 
-Local triage runs **synchronously** with `CLOUD_TASKS_ENABLED=false` (no GCP queue required).
+Local triage runs **synchronously** with `CLOUD_TASKS_ENABLED=false` (no GCP queue required). Creating a ticket calls Gemini inline and returns classification fields on the `201` response.
+
+### Gemini (local)
+
+Set in `.env` (see [`.env.example`](.env.example)):
+
+| Mode | Required env |
+| ---- | ------------ |
+| **AI Studio (default)** | `GEMINI_API_KEY`, `GOOGLE_GENAI_USE_VERTEXAI=false` |
+| **Vertex + ADC** | `GOOGLE_GENAI_USE_VERTEXAI=true`, `GCP_PROJECT_ID`, `VERTEX_LOCATION=global`, plus `gcloud auth application-default login` |
+
+Model defaults to `gemini-3.1-flash-lite-preview` (`GEMINI_MODEL`). Production uses Vertex only on `triage-runtime@` — no `GEMINI_API_KEY` in Secret Manager ([ADR-0004](docs/adr/0004-vertex-ai-gemini-on-cloud-run.md)).
+
+### Try the API
+
+```bash
+curl -s -X POST http://localhost:8080/tickets \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: $API_KEY" \
+  -d '{
+    "subject": "Charged twice for same order",
+    "body": "Order #8821 shows two charges on my card. Please refund the duplicate.",
+    "customer_email": "customer@example.com",
+    "customer_name": "Jane Doe"
+  }'
+```
+
+Use `API_KEY` from your `.env`. On success, the response includes Gemini-assigned `category`, `priority`, `escalate`, and `ai_draft_reply`. OpenAPI: [`backend/openapi.yaml`](backend/openapi.yaml) · local docs at [http://localhost:8080/docs](http://localhost:8080/docs) when `IS_PRODUCTION=false`.
 
 ### Tests
 
@@ -148,7 +175,7 @@ Production path ([ADR-0019](docs/adr/0019-cloud-run-firebase-hosting-production.
 6. **Observability** — structured JSON logs ([ADR-0007](docs/adr/0007-structured-logs-and-one-alert.md)); Cloud Monitoring alerts on email failures, triage fallback, worker auth; SLO on `POST /tickets` > 99% / 7d ([gcp-monitoring-slo.md](docs/gcp-monitoring-slo.md))
 7. **Cost controls** — GCP budget alert, resource labels (`env=prod`, `app=triage`, `team=solo`)
 
-**Deploy backend:**
+**Deploy backend** (sets `GOOGLE_GENAI_USE_VERTEXAI=true`, `GEMINI_MODEL=gemini-3.1-flash-lite-preview`, Vertex via `triage-runtime@` — no prod `GEMINI_API_KEY`):
 
 ```bash
 export PROJECT_ID=your-gcp-project-id
