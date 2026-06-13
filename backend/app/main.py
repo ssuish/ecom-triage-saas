@@ -4,8 +4,11 @@ from app.routers import health, agents, tickets, workers
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
+from app.logging_config import configure_logging
 from app.middleware.rate_limit import limiter
 from app.settings import settings
+
+configure_logging(settings.IS_PRODUCTION)
 
 _cors_origins = [settings.APP_BASE_URL]
 if settings.APP_BASE_URL != "http://localhost:3000":

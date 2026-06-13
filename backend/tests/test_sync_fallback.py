@@ -29,11 +29,15 @@ async def test_create_ticket_calls_triage_sync_when_cloud_tasks_disabled(
     )
     assert response.status_code == 201
 
+    ticket_id = response.json()["id"]
+
     mock_triage.assert_called_once_with(
-        subject="Sync test", body="Testing sync", agents=[]
+        subject="Sync test",
+        body="Testing sync",
+        agents=[],
+        ticket_id=ticket_id,
     )
 
-    ticket_id = response.json()["id"]
     from app.models.ticket import Ticket
 
     ticket = db_session.query(Ticket).filter(Ticket.id == ticket_id).first()

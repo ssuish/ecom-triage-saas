@@ -45,7 +45,12 @@ def execute_triage(ticket_id: str, db: Session) -> dict:
         return {"ok": True, "skipped": "already_triaged"}
 
     agents = [{"id": a.id, "email": a.email} for a in db.query(Agent).all()]
-    result = run_triage(subject=ticket.subject, body=ticket.body, agents=agents)
+    result = run_triage(
+        subject=ticket.subject,
+        body=ticket.body,
+        agents=agents,
+        ticket_id=ticket.id,
+    )
 
     ticket.category = result.category  # type: ignore[assignment]
     ticket.priority = result.priority  # type: ignore[assignment]
