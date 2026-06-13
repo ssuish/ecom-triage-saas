@@ -42,3 +42,6 @@ docs/
 .agents/
 skills-lock.json
 CONTEXT.md
+AGENT.md
+
+.pnpm-store/

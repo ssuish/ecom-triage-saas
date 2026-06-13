@@ -161,7 +161,7 @@ Full checklist: [docs/gcp-production-setup.md](docs/gcp-production-setup.md) (St
 
 **Solo dev ladder:** `feature/*` → PR → `main` (CI) → manual promote → prod.
 
-**CI:** `backend-ci.yml` and `frontend-ci.yml` run tests on push/PR. Deploys are **manual CLI** — no GHA deploy workflows yet.
+**CI:** `.github/workflows/ci.yml` runs path-filtered backend (pytest + Docker build) and frontend (test + build) on push/PR. Deploys are **manual CLI** — no GHA deploy workflows yet.
 
 See [CONTEXT.md](CONTEXT.md) for domain terms. ADRs 0014, 0015, 0018 describe the superseded Railway/Vercel path.
 

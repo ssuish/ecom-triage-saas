@@ -21,6 +21,8 @@ docs/        PRD, GCP setup, ADRs
 
 Branch: `core-be`.
 
+CI: `.github/workflows/ci.yml` — path-filtered backend (pytest + Docker build) and frontend (test + build) on push/PR; `workflow_dispatch` runs all jobs.
+
 ## Commands
 
 ```bash
