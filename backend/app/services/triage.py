@@ -73,19 +73,38 @@ def _parsed_to_dict(parsed: Any) -> dict[str, Any]:
     return {}
 
 
-def _configure_vertex_env() -> None:
-    import os
-
-    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true"
-    os.environ["GOOGLE_CLOUD_PROJECT"] = settings.GCP_PROJECT_ID
-    os.environ["GOOGLE_CLOUD_LOCATION"] = settings.VERTEX_LOCATION
+_client: genai.Client | None = None
 
 
-def _genai_client() -> genai.Client:
-    if settings.GEMINI_API_KEY:
-        return genai.Client(api_key=settings.GEMINI_API_KEY)
-    _configure_vertex_env()
-    return genai.Client()
+def _get_genai_client() -> genai.Client:
+    global _client
+    if _client is not None:
+        return _client
+    if settings.IS_PRODUCTION:
+        if settings.GEMINI_API_KEY:
+            raise RuntimeError("GEMINI_API_KEY not allowed in production")
+        if not settings.GCP_PROJECT_ID:
+            raise RuntimeError("GCP_PROJECT_ID required for Vertex")
+        _client = genai.Client(
+            vertexai=True,
+            project=settings.GCP_PROJECT_ID,
+            location=settings.VERTEX_LOCATION,
+        )
+    elif settings.GEMINI_API_KEY:
+        _client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    elif settings.GOOGLE_GENAI_USE_VERTEXAI:
+        if not settings.GCP_PROJECT_ID:
+            raise RuntimeError("GCP_PROJECT_ID required for Vertex")
+        _client = genai.Client(
+            vertexai=True,
+            project=settings.GCP_PROJECT_ID,
+            location=settings.VERTEX_LOCATION,
+        )
+    else:
+        raise RuntimeError(
+            "Set GEMINI_API_KEY or enable Vertex (GOOGLE_GENAI_USE_VERTEXAI + GCP_PROJECT_ID)"
+        )
+    return _client
 
 
 def run_triage(
@@ -98,7 +117,7 @@ def run_triage(
     start = time.monotonic()
     timeout_ms = settings.GEMINI_TIMEOUT_SECONDS * 1000
     try:
-        client = _genai_client()
+        client = _get_genai_client()
         prompt = TRIAGE_PROMPT.format(subject=subject[:500], body=body[:8000])
         response = client.models.generate_content(
             model=settings.GEMINI_MODEL,

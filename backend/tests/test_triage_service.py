@@ -1,11 +1,20 @@
 import pytest
 from unittest.mock import MagicMock, patch
+import app.services.triage as triage_module
 from app.services.triage import (
     TriageResult,
     TriageResponseSchema,
     run_triage,
     _coerce_triage_result,
+    _get_genai_client,
 )
+
+
+@pytest.fixture(autouse=True)
+def reset_genai_client():
+    triage_module._client = None
+    yield
+    triage_module._client = None
 
 
 def test_triage_result_defaults():
@@ -38,9 +47,78 @@ def test_coerce_invalid_enum_returns_defaults():
     assert result.priority == "medium"
 
 
-@patch("app.services.triage.log_event")
+@patch("app.services.triage.settings")
 @patch("app.services.triage.genai")
-def test_run_triage_calls_vertex_and_returns_result(mock_genai, mock_log_event):
+def test_get_genai_client_rejects_api_key_in_production(mock_genai, mock_settings):
+    mock_settings.IS_PRODUCTION = True
+    mock_settings.GEMINI_API_KEY = "secret-key"
+    mock_settings.GCP_PROJECT_ID = "my-project"
+    mock_settings.VERTEX_LOCATION = "global"
+
+    with pytest.raises(RuntimeError, match="GEMINI_API_KEY not allowed in production"):
+        _get_genai_client()
+    mock_genai.Client.assert_not_called()
+
+
+@patch("app.services.triage.settings")
+@patch("app.services.triage.genai")
+def test_get_genai_client_uses_api_key_locally(mock_genai, mock_settings):
+    mock_client = MagicMock()
+    mock_genai.Client.return_value = mock_client
+    mock_settings.IS_PRODUCTION = False
+    mock_settings.GEMINI_API_KEY = "dev-key"
+    mock_settings.GOOGLE_GENAI_USE_VERTEXAI = False
+
+    client = _get_genai_client()
+    assert client is mock_client
+    mock_genai.Client.assert_called_once_with(api_key="dev-key")
+
+
+@patch("app.services.triage.settings")
+@patch("app.services.triage.genai")
+def test_get_genai_client_uses_vertex_when_flag_set(mock_genai, mock_settings):
+    mock_client = MagicMock()
+    mock_genai.Client.return_value = mock_client
+    mock_settings.IS_PRODUCTION = False
+    mock_settings.GEMINI_API_KEY = ""
+    mock_settings.GOOGLE_GENAI_USE_VERTEXAI = True
+    mock_settings.GCP_PROJECT_ID = "my-project"
+    mock_settings.VERTEX_LOCATION = "global"
+
+    client = _get_genai_client()
+    assert client is mock_client
+    mock_genai.Client.assert_called_once_with(
+        vertexai=True,
+        project="my-project",
+        location="global",
+    )
+
+
+@patch("app.services.triage.settings")
+@patch("app.services.triage.genai")
+def test_get_genai_client_singleton(mock_genai, mock_settings):
+    mock_client = MagicMock()
+    mock_genai.Client.return_value = mock_client
+    mock_settings.IS_PRODUCTION = False
+    mock_settings.GEMINI_API_KEY = "dev-key"
+    mock_settings.GOOGLE_GENAI_USE_VERTEXAI = False
+
+    first = _get_genai_client()
+    second = _get_genai_client()
+    assert first is second
+    mock_genai.Client.assert_called_once()
+
+
+@patch("app.services.triage.log_event")
+@patch("app.services.triage.settings")
+@patch("app.services.triage.genai")
+def test_run_triage_calls_vertex_and_returns_result(mock_genai, mock_settings, mock_log_event):
+    mock_settings.IS_PRODUCTION = False
+    mock_settings.GEMINI_API_KEY = "dev-key"
+    mock_settings.GOOGLE_GENAI_USE_VERTEXAI = False
+    mock_settings.GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
+    mock_settings.GEMINI_TIMEOUT_SECONDS = 15
+
     mock_client = MagicMock()
     mock_genai.Client.return_value = mock_client
     mock_response = MagicMock()
@@ -68,8 +146,42 @@ def test_run_triage_calls_vertex_and_returns_result(mock_genai, mock_log_event):
 
 
 @patch("app.services.triage.log_event")
+@patch("app.services.triage.settings")
 @patch("app.services.triage.genai")
-def test_run_triage_falls_back_on_exception(mock_genai, mock_log_event):
+def test_run_triage_singleton_reuses_client(mock_genai, mock_settings, mock_log_event):
+    mock_settings.IS_PRODUCTION = False
+    mock_settings.GEMINI_API_KEY = "dev-key"
+    mock_settings.GOOGLE_GENAI_USE_VERTEXAI = False
+    mock_settings.GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
+    mock_settings.GEMINI_TIMEOUT_SECONDS = 15
+
+    mock_client = MagicMock()
+    mock_genai.Client.return_value = mock_client
+    mock_response = MagicMock()
+    mock_response.parsed = TriageResponseSchema(
+        category="general",
+        priority="medium",
+        escalate=False,
+        draft_reply="Hello",
+        assigned_agent_id=None,
+    )
+    mock_client.models.generate_content.return_value = mock_response
+
+    run_triage(subject="Hello", body="Need help", agents=[], ticket_id="t-1")
+    run_triage(subject="Again", body="Need help", agents=[], ticket_id="t-2")
+    mock_genai.Client.assert_called_once()
+
+
+@patch("app.services.triage.log_event")
+@patch("app.services.triage.settings")
+@patch("app.services.triage.genai")
+def test_run_triage_falls_back_on_exception(mock_genai, mock_settings, mock_log_event):
+    mock_settings.IS_PRODUCTION = False
+    mock_settings.GEMINI_API_KEY = "dev-key"
+    mock_settings.GOOGLE_GENAI_USE_VERTEXAI = False
+    mock_settings.GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
+    mock_settings.GEMINI_TIMEOUT_SECONDS = 15
+
     mock_client = MagicMock()
     mock_genai.Client.return_value = mock_client
     mock_client.models.generate_content.side_effect = Exception("API error")
