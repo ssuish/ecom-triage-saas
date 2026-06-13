@@ -1,14 +1,17 @@
 from fastapi import Depends, HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.magic_token import MagicToken
+from app.security import api_key_header, clerk_bearer, magic_token_header
 from app.settings import settings
 
 
-def require_api_key(request: Request) -> bool:
-    key = request.headers.get("x-api-key", "")
-    if key != settings.API_KEY:
+def require_api_key(
+    api_key: str | None = Depends(api_key_header),
+) -> bool:
+    if not api_key or api_key != settings.API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return True
 
@@ -21,19 +24,22 @@ def require_magic_token(token: str, db: Session = Depends(get_db)) -> MagicToken
 
 
 def require_magic_token_header(
-    request: Request, db: Session = Depends(get_db)
+    token: str | None = Depends(magic_token_header),
+    db: Session = Depends(get_db),
 ) -> MagicToken:
-    token = request.headers.get("x-magic-token", "")
     if not token:
         raise HTTPException(status_code=401, detail="Missing magic token")
     return require_magic_token(token=token, db=db)
 
-def require_clerk_agent(request: Request) -> dict:
+
+def require_clerk_agent(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(clerk_bearer),
+) -> dict:
     from clerk_backend_api import Clerk
     from clerk_backend_api.security import AuthenticateRequestOptions
 
-    auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
+    if credentials is None:
         raise HTTPException(status_code=401, detail="Missing Authorization header")
 
     parties = [
