@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     VERTEX_LOCATION: str = "global"
     GOOGLE_GENAI_USE_VERTEXAI: bool = False
     GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.1-flash-lite-preview"
     GEMINI_TIMEOUT_SECONDS: int = 15
     RATE_LIMIT_TICKETS: str = "100/minute"
     RATE_LIMIT_STATUS: str = "30/minute"
