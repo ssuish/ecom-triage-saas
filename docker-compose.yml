@@ -17,28 +17,11 @@ services:
     build: ./backend
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
-      PORT: "8080"
+      # Override host-local .env URL for in-compose Postgres service.
       DATABASE_URL: "postgresql+psycopg2://triage:triage@postgres:5432/triage"
-      CLERK_SECRET_KEY: "sk_test_placeholder"
-      OPERATOR_EMAIL_ALLOWLIST: "admin@example.com"
-      API_KEY: "dev-api-key"
-      RESEND_API_KEY: ""
-      GCP_PROJECT_ID: ""
-      VERTEX_LOCATION: "global"
-      GOOGLE_GENAI_USE_VERTEXAI: "false"
-      GEMINI_API_KEY: ""
-      GEMINI_TIMEOUT_SECONDS: "15"
-      RATE_LIMIT_TICKETS: "10/minute"
-      CLOUD_TASKS_ENABLED: "false"
-      CLOUD_TASKS_LOCATION: "us-central1"
-      CLOUD_TASKS_TRIAGE_QUEUE: "triage-queue"
-      CLOUD_TASKS_EMAIL_QUEUE: "email-queue"
-      TASKS_OIDC_AUDIENCE: "http://localhost:8080"
-      TASKS_INVOKER_SA_EMAIL: ""
-      APP_BASE_URL: "http://localhost:3000"
-      WORKER_BASE_URL: "http://localhost:8080"
-      FROM_EMAIL: "Triage Support <support@yourdomain.com>"
     depends_on:
       postgres:
         condition: service_healthy

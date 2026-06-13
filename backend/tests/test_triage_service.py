@@ -59,7 +59,7 @@ def test_run_triage_calls_vertex_and_returns_result(mock_genai, mock_log_event):
     mock_client.models.generate_content.assert_called_once()
     config = mock_client.models.generate_content.call_args.kwargs["config"]
     assert config.response_mime_type == "application/json"
-    assert config.response_json_schema is TriageResponseSchema
+    assert config.response_json_schema == TriageResponseSchema.model_json_schema()
     assert config.http_options.timeout == 15_000
     mock_log_event.assert_called_once()
     assert mock_log_event.call_args[0][2] == "triage"

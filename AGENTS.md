@@ -27,6 +27,7 @@ CI: `.github/workflows/ci.yml` — path-filtered backend (pytest + Docker build)
 
 ```bash
 cp .env.example .env && docker compose up --build   # local stack
+./scripts/run-migrations.sh                         # if backend started before migrate-on-boot image
 cd backend && uv sync --dev && uv run pytest tests/ -v
 cd frontend && pnpm install && pnpm test
 ```

@@ -12,8 +12,6 @@ from app.settings import settings
 
 logger = logging.getLogger(__name__)
 
-TRIAGE_MODEL = "gemini-3-flash"
-
 VALID_CATEGORIES = {"billing", "technical", "general", "other"}
 VALID_PRIORITIES = {"low", "medium", "high"}
 
@@ -103,11 +101,11 @@ def run_triage(
         client = _genai_client()
         prompt = TRIAGE_PROMPT.format(subject=subject[:500], body=body[:8000])
         response = client.models.generate_content(
-            model=TRIAGE_MODEL,
+            model=settings.GEMINI_MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                response_json_schema=TriageResponseSchema,
+                response_json_schema=TriageResponseSchema.model_json_schema(),
                 http_options=types.HttpOptions(timeout=timeout_ms),
             ),
         )
