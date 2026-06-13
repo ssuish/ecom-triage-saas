@@ -39,9 +39,9 @@ def test_send_reply_email_calls_resend(mock_resend):
     assert "We&#x27;ve resolved your issue." in call_kwargs["html"]
 
 
-@patch("app.services.email.logger")
+@patch("app.services.email.log_event")
 @patch("app.services.email.resend")
-def test_email_service_logs_on_resend_exception(mock_resend, mock_logger):
+def test_email_service_logs_on_resend_exception(mock_resend, mock_log_event):
     mock_resend.Emails.send.side_effect = Exception("Resend down")
     send_confirmation_email(
         to="u@u.com",
@@ -50,5 +50,6 @@ def test_email_service_logs_on_resend_exception(mock_resend, mock_logger):
         subject="S",
         magic_link="https://app.example.com/ticket/t?token=tok",
     )
-    mock_logger.error.assert_called_once()
-    assert "email_send_failed" in mock_logger.error.call_args[0][0]
+    mock_log_event.assert_called_once()
+    assert mock_log_event.call_args[0][2] == "email_send_failed"
+    assert mock_log_event.call_args[1]["ticket_id"] == "t"

@@ -2,6 +2,7 @@ import logging
 
 import resend
 
+from app.logging_config import log_event
 from app.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,13 @@ def send_confirmation_email(
             }
         )
     except Exception:
-        logger.error("email_send_failed type=confirmation ticket_id=%s", ticket_id)
+        log_event(
+            logger,
+            logging.ERROR,
+            "email_send_failed",
+            ticket_id=ticket_id,
+            type="confirmation",
+        )
 
 
 def send_reply_email(
@@ -75,4 +82,10 @@ def send_reply_email(
             }
         )
     except Exception:
-        logger.error("email_send_failed type=reply ticket_id=%s", ticket_id)
+        log_event(
+            logger,
+            logging.ERROR,
+            "email_send_failed",
+            ticket_id=ticket_id,
+            type="reply",
+        )
