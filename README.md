@@ -2,7 +2,7 @@
 
 AI-assisted support ticketing for small teams — one queue, automatic classification, and email-backed customer updates without a heavy helpdesk.
 
-**Status:** In active development. Backend foundation (ticket CRUD, auth, rate limits) is done; async workers, triage, and operator console are in progress per the week plans.
+**Status:** In active development. Backend (CRUD, auth, Gemini triage, Cloud Tasks workers, Resend email, structured JSON logs) is largely done; operator console and prod deploy are in progress per the week plans.
 
 ---
 
@@ -94,7 +94,7 @@ flowchart TD
 | Email | Resend (outbound only in v1)                                    |
 | Auth  | Clerk (operators), magic tokens (customers), API key (public form)      |
 | UI    | React, Vite, TanStack Router (deferred)                                 |
-| Infra | GCP Cloud Run, Cloud Tasks, Firebase Hosting, Secret Manager            |
+| Infra | GCP Cloud Run, Cloud Tasks, Firebase Hosting, Secret Manager, Cloud Monitoring |
 
 
 ---
@@ -104,10 +104,13 @@ flowchart TD
 ```text
 backend/          FastAPI app, Alembic, tests
 frontend/         React/Vite SPA (placeholder)
+scripts/
+  deploy-backend.sh   Cloud Run deploy wrapper (rightsizing + labels)
 docs/
-  triage-prd.md   Product spec
-  gcp-production-setup.md   Manual prod deploy checklist
+  triage-prd.md             Product spec
+  gcp-production-setup.md   Manual prod deploy checklist (Stages 0–5)
   gcp-firebase-hosting.md   Firebase Hosting setup
+  gcp-monitoring-slo.md     Alerts, log metrics, POST /tickets SLO
 ```
 
 ---
@@ -138,12 +141,25 @@ cd backend && uv sync --dev && uv run pytest tests/ -v
 Production path ([ADR-0019](docs/adr/0019-cloud-run-firebase-hosting-production.md)):
 
 1. Neon database (future) + manual migrations when prod DB exists
-2. **Cloud Run** — FastAPI backend at `api.yourdomain.com` (~120s timeout for workers)
+2. **Cloud Run** — FastAPI backend at `api.yourdomain.com` (120s timeout, 512Mi/1 CPU, max 5 instances)
 3. **Firebase Hosting** — React SPA at `app.yourdomain.com`
 4. Cloud Tasks queues (`triage-queue`, `email-queue`) with OIDC invoker SA
-5. Resend outbound domain; Cloud Monitoring alert on `email_send_failed` ([ADR-0021](docs/adr/0021-cloud-monitoring-email-alert.md))
+5. Resend outbound domain
+6. **Observability** — structured JSON logs ([ADR-0007](docs/adr/0007-structured-logs-and-one-alert.md)); Cloud Monitoring alerts on email failures, triage fallback, worker auth; SLO on `POST /tickets` > 99% / 7d ([gcp-monitoring-slo.md](docs/gcp-monitoring-slo.md))
+7. **Cost controls** — GCP budget alert, resource labels (`env=prod`, `app=triage`, `team=solo`)
 
-**Solo dev ladder:** `feature/*` → PR → `main` (CI) → manual promote → prod. See [docs/gcp-production-setup.md](docs/gcp-production-setup.md).
+**Deploy backend:**
+
+```bash
+export PROJECT_ID=your-gcp-project-id
+export API_DOMAIN=https://api.yourdomain.com
+export APP_DOMAIN=https://app.yourdomain.com
+./scripts/deploy-backend.sh
+```
+
+Full checklist: [docs/gcp-production-setup.md](docs/gcp-production-setup.md) (Stages 0–5). Firebase: [docs/gcp-firebase-hosting.md](docs/gcp-firebase-hosting.md).
+
+**Solo dev ladder:** `feature/*` → PR → `main` (CI) → manual promote → prod.
 
 **CI:** `backend-ci.yml` and `frontend-ci.yml` run tests on push/PR. Deploys are **manual CLI** — no GHA deploy workflows yet.
 
