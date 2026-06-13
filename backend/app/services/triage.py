@@ -7,6 +7,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 
+from app.logging_config import log_event
 from app.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -89,7 +90,12 @@ def _genai_client() -> genai.Client:
     return genai.Client()
 
 
-def run_triage(subject: str, body: str, agents: list) -> TriageResult:
+def run_triage(
+    subject: str,
+    body: str,
+    agents: list,
+    ticket_id: str = "n/a",
+) -> TriageResult:
     """Call Gemini with structured output. Logs outcome; never logs subject/body."""
     start = time.monotonic()
     timeout_ms = settings.GEMINI_TIMEOUT_SECONDS * 1000
@@ -106,14 +112,22 @@ def run_triage(subject: str, body: str, agents: list) -> TriageResult:
             ),
         )
         result = _coerce_triage_result(_parsed_to_dict(response.parsed))
-        logger.info(
-            "triage_outcome=success ticket_id=n/a latency_ms=%d",
-            int((time.monotonic() - start) * 1000),
+        log_event(
+            logger,
+            logging.INFO,
+            "triage",
+            ticket_id=ticket_id,
+            outcome="success",
+            latency_ms=int((time.monotonic() - start) * 1000),
         )
         return result
     except Exception:
-        logger.warning(
-            "triage_outcome=fallback latency_ms=%d",
-            int((time.monotonic() - start) * 1000),
+        log_event(
+            logger,
+            logging.WARNING,
+            "triage",
+            ticket_id=ticket_id,
+            outcome="fallback",
+            latency_ms=int((time.monotonic() - start) * 1000),
         )
         return TriageResult()
