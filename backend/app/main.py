@@ -11,7 +11,16 @@ _cors_origins = [settings.APP_BASE_URL]
 if settings.APP_BASE_URL != "http://localhost:3000":
     _cors_origins.append("http://localhost:3000")
 
-app = FastAPI(title="Triage")
+_docs_url = None if settings.IS_PRODUCTION else "/docs"
+_redoc_url = None if settings.IS_PRODUCTION else "/redoc"
+_openapi_url = None if settings.IS_PRODUCTION else "/openapi.json"
+
+app = FastAPI(
+    title="Triage",
+    docs_url=_docs_url,
+    redoc_url=_redoc_url,
+    openapi_url=_openapi_url,
+)
 
 app.add_middleware(
     CORSMiddleware,

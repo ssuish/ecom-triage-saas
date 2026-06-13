@@ -246,13 +246,34 @@ async def test_customer_status_with_valid_token(client, db_session):
     ticket_id = create_resp.json()["id"]
     mt = db_session.query(MagicToken).filter(MagicToken.ticket_id == ticket_id).first()
 
-    response = await client.get(f"/tickets/{ticket_id}/status?token={mt.token}")
+    response = await client.get(
+        f"/tickets/{ticket_id}/status",
+        headers={"x-magic-token": mt.token},
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["subject"] == "My issue"
     assert "assigned_agent_id" not in data
     assert "escalate" not in data
     assert "ai_draft_reply" not in data
+
+
+@pytest.mark.asyncio
+async def test_customer_status_missing_token_returns_401(client):
+    create_resp = await client.post(
+        "/tickets",
+        json={
+            "subject": "S",
+            "body": "B",
+            "customer_email": "c@c.com",
+            "customer_name": "C",
+        },
+        headers={"x-api-key": "test-api-key"},
+    )
+    ticket_id = create_resp.json()["id"]
+
+    response = await client.get(f"/tickets/{ticket_id}/status")
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -269,7 +290,10 @@ async def test_customer_status_invalid_token_returns_404(client):
     )
     ticket_id = create_resp.json()["id"]
 
-    response = await client.get(f"/tickets/{ticket_id}/status?token=bad-token")
+    response = await client.get(
+        f"/tickets/{ticket_id}/status",
+        headers={"x-magic-token": "bad-token"},
+    )
     assert response.status_code == 404
 
 

@@ -1,23 +1,16 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, EmailStr, Field
 
 from app.models.ticket import TicketCategory, TicketPriority, TicketSource, TicketStatus
 
 
 class TicketCreate(BaseModel):
-    subject: str
-    body: str
-    customer_email: str
-    customer_name: str
-
-    @field_validator("subject")
-    @classmethod
-    def subject_max_500(cls, v: str) -> str:
-        if len(v) > 500:
-            raise ValueError("subject must be 500 characters or fewer")
-        return v
+    subject: str = Field(max_length=500)
+    body: str = Field(max_length=10_000)
+    customer_email: EmailStr
+    customer_name: str = Field(max_length=255)
 
 
 class TicketOut(BaseModel):
@@ -58,4 +51,4 @@ class AssignPayload(BaseModel):
 
 
 class ReplyPayload(BaseModel):
-    agent_reply: str
+    agent_reply: str = Field(max_length=10_000)

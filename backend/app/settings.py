@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_TIMEOUT_SECONDS: int = 15
     RATE_LIMIT_TICKETS: str = "100/minute"
+    RATE_LIMIT_STATUS: str = "30/minute"
+    IS_PRODUCTION: bool = False
     CLOUD_TASKS_ENABLED: bool = False
     CLOUD_TASKS_LOCATION: str = "us-central1"
     CLOUD_TASKS_TRIAGE_QUEUE: str = "triage-queue"

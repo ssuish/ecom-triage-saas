@@ -7,13 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencies import require_api_key, require_clerk_agent
+from app.dependencies import require_api_key, require_clerk_agent, require_magic_token_header
 from app.models.magic_token import MagicToken
 from app.models.ticket import Ticket, TicketStatus
 from app.schemas.ticket import AssignPayload, ReplyPayload, TicketCreate, TicketOut
 from app.models.agent import Agent
 from app.schemas.ticket import TicketStatusOut
-from app.middleware.rate_limit import TICKET_CREATE_LIMIT, limiter
+from app.middleware.rate_limit import TICKET_CREATE_LIMIT, TICKET_STATUS_LIMIT, limiter
 from app.routers.workers import EmailJobPayload, execute_email, execute_triage, _magic_link
 from app.services.tasks import JobType, enqueue_job
 from app.settings import settings
@@ -172,14 +172,13 @@ def resolve_ticket(
 
 
 @router.get("/{ticket_id}/status", response_model=TicketStatusOut)
+@limiter.limit(TICKET_STATUS_LIMIT)
 def get_ticket_status(
+    request: Request,
     ticket_id: str,
-    token: str = Query(...),
     db: Session = Depends(get_db),
+    magic: MagicToken = Depends(require_magic_token_header),
 ):
-    from app.dependencies import require_magic_token
-
-    magic = require_magic_token(token=token, db=db)
     if magic.ticket_id != ticket_id:
         raise HTTPException(status_code=404, detail="Token does not match ticket")
 

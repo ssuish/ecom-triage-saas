@@ -93,6 +93,9 @@ def execute_email(payload: EmailJobPayload, db: Session) -> dict:
     if ticket is None:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
+    if payload.to != ticket.customer_email:
+        raise HTTPException(status_code=400, detail="Recipient does not match ticket")
+
     if payload.type == "confirmation" and ticket.confirmation_email_sent_at:
         return {"ok": True, "skipped": "confirmation_already_sent"}
     if payload.type == "reply" and ticket.reply_email_sent_at:

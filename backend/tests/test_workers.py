@@ -119,6 +119,24 @@ async def test_email_worker_reply_type(mock_send, client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_email_worker_rejects_mismatched_recipient(client, db_session):
+    ticket = _make_ticket(db_session, email="user@example.com")
+
+    response = await client.post(
+        "/workers/email",
+        json={
+            "ticket_id": ticket.id,
+            "to": "attacker@evil.com",
+            "type": "confirmation",
+            "agent_reply": None,
+            "magic_link": "https://app.example.com/ticket/abc?token=tok",
+        },
+        headers={"Authorization": "Bearer valid-token"},
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_email_worker_rejects_invalid_signature(client, db_session):
     async def _verify_fail() -> None:
         raise HTTPException(status_code=401, detail="Invalid OIDC token")

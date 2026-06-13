@@ -19,6 +19,15 @@ def require_magic_token(token: str, db: Session = Depends(get_db)) -> MagicToken
         raise HTTPException(status_code=404, detail="Invalid token")
     return mt
 
+
+def require_magic_token_header(
+    request: Request, db: Session = Depends(get_db)
+) -> MagicToken:
+    token = request.headers.get("x-magic-token", "")
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing magic token")
+    return require_magic_token(token=token, db=db)
+
 def require_clerk_agent(request: Request) -> dict:
     from clerk_backend_api import Clerk
     from clerk_backend_api.security import AuthenticateRequestOptions
