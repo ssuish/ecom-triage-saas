@@ -1,21 +1,21 @@
-import { useEffect, useState } from "react";
-
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+import { CustomerStatusPage } from "@/components/CustomerStatusPage";
+import { parseTicketRoute } from "@/lib/ticketRoute";
 
 export default function App() {
-  const [status, setStatus] = useState<string | null>(null);
+  const route = parseTicketRoute(window.location.pathname, window.location.search);
 
-  useEffect(() => {
-    fetch(`${API_URL}/health`)
-      .then((r) => r.json())
-      .then((data: { status: string }) => setStatus(data.status))
-      .catch(() => setStatus("error"));
-  }, []);
+  if (route) {
+    return <CustomerStatusPage ticketId={route.ticketId} token={route.token} />;
+  }
 
   return (
-    <main style={{ fontFamily: "sans-serif", padding: "2rem" }}>
-      <h1>serverless-fastapi</h1>
-      <p>{status === null ? "loading..." : `API status: ${status}`}</p>
+    <main className="flex min-h-screen items-center justify-center p-8 text-center">
+      <div>
+        <h1 className="text-2xl font-semibold">Triage Support</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Submit a request from our support form, then track it from the link in your confirmation email.
+        </p>
+      </div>
     </main>
   );
 }
