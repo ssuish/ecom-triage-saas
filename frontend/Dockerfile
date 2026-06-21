@@ -9,6 +9,11 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 ARG VITE_API_URL=http://localhost:8080
+ARG VITE_CLERK_PUBLISHABLE_KEY=
+ARG VITE_API_KEY=
+ENV VITE_API_URL=$VITE_API_URL \
+    VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY \
+    VITE_API_KEY=$VITE_API_KEY
 RUN pnpm run build
 
 # ---- Serve stage ----

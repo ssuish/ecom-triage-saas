@@ -49,38 +49,43 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    /* Monolith & Shimmer — DESIGN.md source of truth */
+    --background: #F4F4F5;
+    --foreground: #09090B;
+    --card: #FFFFFF;
+    --card-foreground: #09090B;
+    --popover: #FFFFFF;
+    --popover-foreground: #09090B;
+    --primary: #09090B;
+    --primary-foreground: #FFFFFF;
+    --secondary: #FFFFFF;
+    --secondary-foreground: #09090B;
+    --muted: #F4F4F5;
+    --muted-foreground: #A1A1AA;
+    --accent: #F4F4F5;
+    --accent-foreground: #09090B;
+    --destructive: #DC2626;
+    --destructive-foreground: #FFFFFF;
+    --border: rgba(9, 9, 11, 0.08);
+    --input: rgba(9, 9, 11, 0.14);
+    --ring: rgba(99, 102, 241, 0.2);
+    --chart-1: #E4E4E7;
+    --chart-2: #A1A1AA;
+    --chart-3: #71717A;
+    --chart-4: #52525B;
+    --chart-5: #3F3F46;
+    --radius: 0.375rem;
+    --sidebar: #F4F4F5;
+    --sidebar-foreground: #09090B;
+    --sidebar-primary: #09090B;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #FFFFFF;
+    --sidebar-accent-foreground: #09090B;
+    --sidebar-border: rgba(9, 9, 11, 0.08);
+    --sidebar-ring: rgba(99, 102, 241, 0.2);
+    --ai-shimmer: linear-gradient(135deg, #6366F1 0%, #A855F7 50%, #EC4899 100%);
+    --ai-shimmer-bg: rgba(99, 102, 241, 0.05);
+    --ai-shimmer-border: rgba(99, 102, 241, 0.35);
 }
 
 .dark {
