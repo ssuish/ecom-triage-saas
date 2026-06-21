@@ -39,9 +39,16 @@ Thumbs.db
 
 # Local-only
 docs/
+
+# Agent / Cursor (AI assistant config — not backend app/agent models)
 .agents/
+.cursor/
 skills-lock.json
-CONTEXT.md
+AGENTS.md
 AGENT.md
+CONTEXT.md
+CLAUDE.md
+GEMINI.md
+.cursorrules
 
 .pnpm-store/
