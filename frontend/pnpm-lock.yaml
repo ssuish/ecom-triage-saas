@@ -17,6 +17,12 @@ importers:
       '@fontsource-variable/geist':
         specifier: ^5.2.9
         version: 5.2.9
+      '@fontsource-variable/geist-mono':
+        specifier: ^5.2.8
+        version: 5.2.8
+      '@fontsource-variable/inter':
+        specifier: ^5.2.8
+        version: 5.2.8
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.100.11(react@18.3.1)
@@ -32,6 +38,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      gsap:
+        specifier: ^3.13.0
+        version: 3.15.0
       lucide-react:
         specifier: ^0.400.0
         version: 0.400.0(react@18.3.1)
@@ -637,8 +646,14 @@ packages:
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
 
+  '@fontsource-variable/geist-mono@5.2.8':
+    resolution: {integrity: sha512-KI5bj+hkkRiHttYHmccotUZ80ZuZyai+RwI1d7UId0clkx/jXxlo8qYK8j54WzmpBjtMoEMPyllV7faDcj+6RA==}
+
   '@fontsource-variable/geist@5.2.9':
     resolution: {integrity: sha512-TP+QSBG3wxKGPE33CbMy/L0Nu3qvJ6Fy81Yc4LnQ95xH+i+cfEp8fyU8/kfV14YwszxIFPhnoMTbjL71waVpyQ==}
+
+  '@fontsource-variable/inter@5.2.8':
+    resolution: {integrity: sha512-kOfP2D+ykbcX/P3IFnokOhVRNoTozo5/JxhAIVYLpea/UBmCQ/YWPBfWIDuBImXX/15KH+eKh4xpEUyS2sQQGQ==}
 
   '@hono/node-server@1.19.14':
     resolution: {integrity: sha512-GwtvgtXxnWsucXvbQXkRgqksiH2Qed37H9xHZocE5sA3N8O8O8/8FA3uclQXxXVzc9XBZuEOMK7+r02FmSpHtw==}
@@ -1722,6 +1737,9 @@ packages:
   graphql@16.14.0:
     resolution: {integrity: sha512-BBvQ/406p+4CZbTpCbVPSxfzrZrbnuWSP1ELYgyS6B+hNeKzgrdB4JczCa5VZUBQrDa9hUngm0KnexY6pJRN5Q==}
     engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
+
+  gsap@3.15.0:
+    resolution: {integrity: sha512-dMW4CWBTUK1AEEDeZc1g4xpPGIrSf9fJF960qbTZmN/QwZIWY5wgliS6JWl9/25fpTGJrMRtSjGtOmPnfjZB+A==}
 
   has-symbols@1.1.0:
     resolution: {integrity: sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ==}
@@ -3330,7 +3348,11 @@ snapshots:
 
   '@floating-ui/utils@0.2.11': {}
 
+  '@fontsource-variable/geist-mono@5.2.8': {}
+
   '@fontsource-variable/geist@5.2.9': {}
+
+  '@fontsource-variable/inter@5.2.8': {}
 
   '@hono/node-server@1.19.14(hono@4.12.22)':
     dependencies:
@@ -4405,6 +4427,8 @@ snapshots:
   graceful-fs@4.2.11: {}
 
   graphql@16.14.0: {}
+
+  gsap@3.15.0: {}
 
   has-symbols@1.1.0: {}
 
