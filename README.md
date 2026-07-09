@@ -4,7 +4,7 @@ AI-assisted support ticketing for small teams — one queue, automatic classific
 
 **Primary purpose:** [Portfolio showcase](docs/scoping-handoff.md) — live demo on kofeejan subdomains, not a micro-SaaS or internal tool.
 
-**Status:** Backend done (57 pytest tests). Frontend Phase 3 largely done — all four routes (`/`, `/submit`, `/operator`, `/ticket/{id}`), Clerk wired, ~46 Vitest tests. **Phase 3 gap:** inline magic link on submit success (PRD §10.4). Prod deploy (Phase 4) pending: Neon, Cloud Run, Firebase, budget kill-switch.
+**Status:** Backend done (57 pytest tests). Frontend Phase 3 done — all four routes (`/`, `/submit`, `/operator`, `/ticket/{id}`), Clerk wired, ~46 Vitest tests; inline magic link on submit success via create-response token ([ADR-0026](docs/adr/0026-create-response-magic-token.md)). Prod deploy (Phase 4) pending: Neon, Cloud Run, Firebase, budget kill-switch.
 
 ---
 
@@ -201,7 +201,7 @@ See [CONTEXT.md](CONTEXT.md) for domain terms. ADRs 0014, 0015, 0018 describe th
 | ----- | ---------------------------------------------------------------- |
 | 1     | Models, migrations, ticket CRUD, Clerk + magic token, rate limit |
 | 2     | Gemini triage, Cloud Tasks workers, Resend outbound              |
-| 3     | Operator console, customer status page, public form (inline magic link gap) |
+| 3     | Operator console, customer status page, public form (inline magic link via create-response token) |
 | 4     | GCP + Firebase production deploy, end-to-end smoke test          |
 
 ---
