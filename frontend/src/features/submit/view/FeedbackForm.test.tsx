@@ -15,7 +15,7 @@ beforeEach(() => {
 
 function mockMutation(overrides: Partial<ReturnType<typeof useCreateTicket>> = {}) {
   return {
-    mutateAsync: vi.fn().mockResolvedValue({ id: "t1" }),
+    mutateAsync: vi.fn().mockResolvedValue({ id: "t1", magic_token: "tok-123" }),
     isPending: false,
     error: null,
     ...overrides,
@@ -34,7 +34,7 @@ test("shows validation errors when fields are empty", async () => {
 });
 
 test("submits feedback successfully", async () => {
-  const mutateAsync = vi.fn().mockResolvedValue({ id: "t1" });
+  const mutateAsync = vi.fn().mockResolvedValue({ id: "t1", magic_token: "tok-123" });
   vi.mocked(useCreateTicket).mockReturnValue(mockMutation({ mutateAsync }));
   renderWithProviders(<FeedbackForm />);
 

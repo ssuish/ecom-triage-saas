@@ -27,7 +27,9 @@ beforeEach(() => {
 });
 
 test("createTicket posts to /tickets with x-api-key", async () => {
-  vi.mocked(fetch).mockResolvedValue(jsonResponse({ id: "t1", subject: "S" }));
+  vi.mocked(fetch).mockResolvedValue(
+    jsonResponse({ id: "t1", subject: "S", magic_token: "tok-123" }),
+  );
 
   const result = await createTicket({
     subject: "S",
@@ -42,6 +44,7 @@ test("createTicket posts to /tickets with x-api-key", async () => {
   );
   expect((opts.headers as Record<string, string>)["x-api-key"]).toBeDefined();
   expect(result.id).toBe("t1");
+  expect(result.magic_token).toBe("tok-123");
 });
 
 test("listTickets gets /tickets with Clerk token", async () => {

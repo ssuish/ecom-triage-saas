@@ -10,6 +10,12 @@ const EMPTY_VALUES: SubmitValues = {
   body: "",
 };
 
+export interface TicketSubmission {
+  ticketId: string;
+  magicToken: string;
+  statusHref: string;
+}
+
 export interface UseTicketSubmitOptions {
   fields: SubmitField[];
   fieldIds: SubmitFieldIds;
@@ -29,12 +35,14 @@ export function useTicketSubmit({
 }: UseTicketSubmitOptions) {
   const [values, setValues] = useState<SubmitValues>(EMPTY_VALUES);
   const [errors, setErrors] = useState<SubmitErrors>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [submission, setSubmission] = useState<TicketSubmission | null>(null);
   const statusRef = useRef<HTMLDivElement>(null);
   const createTicket = useCreateTicket();
 
+  const submitted = submission !== null;
+
   useEffect(() => {
-    if (submitted || !isSubmitDirty(values, fields)) return;
+    if (submission || !isSubmitDirty(values, fields)) return;
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
@@ -43,12 +51,12 @@ export function useTicketSubmit({
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [values, submitted, fields]);
+  }, [values, submission, fields]);
 
   useEffect(() => {
-    if (!submitted) return;
+    if (!submission) return;
     statusRef.current?.focus();
-  }, [submitted]);
+  }, [submission]);
 
   const set =
     (field: SubmitField) =>
@@ -67,13 +75,17 @@ export function useTicketSubmit({
     }
 
     try {
-      await createTicket.mutateAsync({
+      const ticket = await createTicket.mutateAsync({
         customer_name: values.customer_name.trim(),
         customer_email: values.customer_email.trim(),
         subject: (fixedSubject ?? values.subject).trim(),
         body: values.body.trim(),
       });
-      setSubmitted(true);
+      setSubmission({
+        ticketId: ticket.id,
+        magicToken: ticket.magic_token,
+        statusHref: `/ticket/${ticket.id}?token=${encodeURIComponent(ticket.magic_token)}`,
+      });
     } catch {
       // mutation error surfaced via createTicket.error
     }
@@ -83,6 +95,7 @@ export function useTicketSubmit({
     values,
     errors,
     submitted,
+    submission,
     statusRef,
     createTicket,
     set,

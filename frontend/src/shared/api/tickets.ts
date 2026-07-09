@@ -45,11 +45,15 @@ export interface TicketCreatePayload {
   customer_name: string;
 }
 
+export interface TicketCreateResult extends Ticket {
+  magic_token: string;
+}
+
 export function createTicket(
   payload: TicketCreatePayload,
   signal?: AbortSignal,
-): Promise<Ticket> {
-  return apiFetch<Ticket>(`${API_URL}/tickets`, {
+): Promise<TicketCreateResult> {
+  return apiFetch<TicketCreateResult>(`${API_URL}/tickets`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
     body: JSON.stringify(payload),

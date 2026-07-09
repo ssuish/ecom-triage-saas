@@ -18,6 +18,7 @@ export function TicketSubmitForm() {
     values,
     errors,
     submitted,
+    submission,
     statusRef,
     createTicket,
     set,
@@ -30,7 +31,7 @@ export function TicketSubmitForm() {
     errorIds: FIELD_IDS,
   });
 
-  if (submitted) {
+  if (submitted && submission) {
     return (
       <div className="card stack stack--sm max-w-xl page-enter">
         <h1 className="type-h1 text-[color:var(--status-success)]">Ticket submitted</h1>
@@ -41,9 +42,17 @@ export function TicketSubmitForm() {
           ref={statusRef}
           tabIndex={-1}
           role="status"
-          className="type-small text-ink-muted focus-visible-success outline-none"
+          className="stack stack--xs focus-visible-success outline-none"
         >
-          Check your inbox for updates from our team.
+          <p className="type-small text-ink-muted">
+            Save this link to check your ticket later — no account required.
+          </p>
+          <a
+            href={submission.statusHref}
+            className="marketing-link type-body text-ink underline-offset-4 hover:underline break-all"
+          >
+            {submission.statusHref}
+          </a>
         </div>
       </div>
     );
