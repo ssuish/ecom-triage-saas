@@ -9,9 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SubmitRouteImport } from './routes/submit'
+import { Route as OperatorRouteImport } from './routes/operator'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TicketIdRouteImport } from './routes/ticket.$id'
 
+const SubmitRoute = SubmitRouteImport.update({
+  id: '/submit',
+  path: '/submit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperatorRoute = OperatorRouteImport.update({
+  id: '/operator',
+  path: '/operator',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -25,32 +37,54 @@ const TicketIdRoute = TicketIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/operator': typeof OperatorRoute
+  '/submit': typeof SubmitRoute
   '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/operator': typeof OperatorRoute
+  '/submit': typeof SubmitRoute
   '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/operator': typeof OperatorRoute
+  '/submit': typeof SubmitRoute
   '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ticket/$id'
+  fullPaths: '/' | '/operator' | '/submit' | '/ticket/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ticket/$id'
-  id: '__root__' | '/' | '/ticket/$id'
+  to: '/' | '/operator' | '/submit' | '/ticket/$id'
+  id: '__root__' | '/' | '/operator' | '/submit' | '/ticket/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  OperatorRoute: typeof OperatorRoute
+  SubmitRoute: typeof SubmitRoute
   TicketIdRoute: typeof TicketIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/submit': {
+      id: '/submit'
+      path: '/submit'
+      fullPath: '/submit'
+      preLoaderRoute: typeof SubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operator': {
+      id: '/operator'
+      path: '/operator'
+      fullPath: '/operator'
+      preLoaderRoute: typeof OperatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -70,6 +104,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  OperatorRoute: OperatorRoute,
+  SubmitRoute: SubmitRoute,
   TicketIdRoute: TicketIdRoute,
 }
 export const routeTree = rootRouteImport
