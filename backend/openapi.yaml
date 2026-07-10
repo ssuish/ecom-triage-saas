@@ -60,7 +60,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TicketOut"
+                $ref: "#/components/schemas/TicketCreateOut"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "422":
@@ -483,6 +483,17 @@ components:
         updated_at:
           type: string
           format: date-time
+
+    TicketCreateOut:
+      type: object
+      description: Create-only response for POST /tickets — includes the magic token for the submitter
+      allOf:
+        - $ref: "#/components/schemas/TicketOut"
+        - type: object
+          required: [magic_token]
+          properties:
+            magic_token:
+              type: string
 
     TicketStatusOut:
       type: object

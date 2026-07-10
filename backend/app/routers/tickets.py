@@ -7,20 +7,36 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencies import require_api_key, require_clerk_agent, require_magic_token_header
+from app.dependencies import (
+    require_api_key,
+    require_clerk_agent,
+    require_magic_token_header,
+)
 from app.models.magic_token import MagicToken
 from app.models.ticket import Ticket, TicketStatus
-from app.schemas.ticket import AssignPayload, ReplyPayload, TicketCreate, TicketOut
+from app.schemas.ticket import (
+    AssignPayload,
+    ReplyPayload,
+    TicketCreate,
+    TicketCreateOut,
+    TicketOut,
+)
 from app.models.agent import Agent
 from app.schemas.ticket import TicketStatusOut
 from app.middleware.rate_limit import TICKET_CREATE_LIMIT, TICKET_STATUS_LIMIT, limiter
-from app.routers.workers import EmailJobPayload, execute_email, execute_triage, _magic_link
+from app.routers.workers import (
+    EmailJobPayload,
+    execute_email,
+    execute_triage,
+    _magic_link,
+)
 from app.services.tasks import JobType, enqueue_job
 from app.settings import settings
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
-@router.post("", response_model=TicketOut, status_code=201)
+
+@router.post("", response_model=TicketCreateOut, status_code=201)
 @limiter.limit(TICKET_CREATE_LIMIT)
 def create_ticket(
     request: Request,
@@ -48,11 +64,15 @@ def create_ticket(
         execute_triage(ticket.id, db)
         db.refresh(ticket)
 
-    return ticket
+    return TicketCreateOut(
+        **TicketOut.model_validate(ticket).model_dump(),
+        magic_token=magic_token.token,
+    )
 
 
 class TicketListOut:
     pass
+
 
 class TicketPage(BaseModel):
     items: List[TicketOut]

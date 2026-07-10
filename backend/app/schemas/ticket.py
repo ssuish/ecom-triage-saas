@@ -33,6 +33,12 @@ class TicketOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TicketCreateOut(TicketOut):
+    """Create-only response for POST /tickets — includes the magic token for the submitter."""
+
+    magic_token: str
+
+
 class TicketStatusOut(BaseModel):
     """Stripped response for customer magic-link view."""
 
