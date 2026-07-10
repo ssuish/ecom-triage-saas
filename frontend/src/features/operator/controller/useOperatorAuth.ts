@@ -2,13 +2,23 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
 import { useClerkAuth } from "@/shared/hooks/useClerkAuth";
 
+const OPERATOR_QUERY_KEY_ROOTS = new Set([
+  "operator-token",
+  "tickets",
+  "ticket",
+  "agents",
+]);
+
+const isOperatorQuery = (query: { queryKey: readonly unknown[] }) =>
+  OPERATOR_QUERY_KEY_ROOTS.has(query.queryKey[0] as string);
+
 export function useOperatorAuth() {
   const queryClient = useQueryClient();
   const { getBearerToken, isLoaded, userId, signOut } = useClerkAuth();
 
   useEffect(() => {
     return () => {
-      queryClient.clear();
+      queryClient.removeQueries({ predicate: isOperatorQuery });
     };
   }, [queryClient]);
 
@@ -26,7 +36,7 @@ export function useOperatorAuth() {
   });
 
   const signOutAndClearCache = useCallback(async () => {
-    queryClient.clear();
+    queryClient.removeQueries({ predicate: isOperatorQuery });
     await signOut();
   }, [queryClient, signOut]);
 

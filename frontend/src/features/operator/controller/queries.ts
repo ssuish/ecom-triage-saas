@@ -127,7 +127,11 @@ export function useResolveTicket(authUserId: string | null | undefined) {
       token: string;
       agentReply: string;
     }) => {
-      await saveReply(id, agentReply, token);
+      const savedTicket = await saveReply(id, agentReply, token);
+      if (authUserId) {
+        queryClient.setQueryData(["ticket", authUserId, id], savedTicket);
+        queryClient.invalidateQueries({ queryKey: ["tickets", authUserId] });
+      }
       return resolveTicket(id, token);
     },
     onSuccess: (ticket) => {

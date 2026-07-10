@@ -56,7 +56,7 @@ export function OperatorConsoleMock({
   const openCount = phases.filter((phase) => phase !== "triaged").length;
 
   return (
-    <div className="card overflow-hidden !p-0" aria-hidden="true">
+    <div className="card card--flush overflow-hidden" aria-hidden="true">
       <div className="border-b border-border px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -103,7 +103,7 @@ export function OperatorConsoleMock({
         })}
       </div>
       <div className="border-t border-border px-4 py-3">
-        <div className="ai-provenance stack stack--sm !rounded-none !border-0 !p-4">
+        <div className="ai-provenance ai-provenance--flush stack stack--sm">
           <p className="ai-badge">AI triage summary</p>
           <p ref={summaryRef} className="type-small text-ink-muted">
             {summaries[visibleSummaryIndex]}

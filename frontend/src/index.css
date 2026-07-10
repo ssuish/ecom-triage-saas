@@ -1124,6 +1124,10 @@
         border-color: var(--ink);
     }
 
+    .card--flush {
+        padding: 0;
+    }
+
     .ai-provenance {
         background: var(--ai-shimmer-bg);
         border: var(--border-default-shorthand);
@@ -1131,6 +1135,13 @@
         border-image: var(--ai-shimmer) 1;
         border-image-slice: 1;
         border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    }
+
+    .ai-provenance--flush {
+        border: 0;
+        border-image: none;
+        border-radius: 0;
+        padding: 1rem;
     }
 
     .ai-badge {

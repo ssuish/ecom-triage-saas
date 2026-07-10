@@ -1,5 +1,5 @@
 import { Menu, X } from "lucide-react";
-import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/shared/components/ui/button";
 
@@ -9,6 +9,9 @@ export const MARKETING_NAV_LINKS = [
   { href: "#roadmap", label: "Roadmap" },
   { href: "#feedback", label: "Feedback" },
 ] as const;
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 interface MarketingHeaderProps {
   variant?: "landing" | "slim";
@@ -26,6 +29,9 @@ export function MarketingHeader({
   const isLanding = variant === "landing";
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
@@ -34,15 +40,44 @@ export function MarketingHeader({
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const trigger = triggerRef.current;
+
+    const focusableElements = (): HTMLElement[] =>
+      overlayRef.current
+        ? Array.from(overlayRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+        : [];
+
+    closeRef.current?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeMenu();
+      if (event.key === "Escape") {
+        closeMenu();
+        return;
+      }
+      if (event.key === "Tab") {
+        const items = focusableElements();
+        if (items.length === 0) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+        const withinOverlay = overlayRef.current?.contains(active) ?? false;
+        if (event.shiftKey) {
+          if (active === first || !withinOverlay) {
+            event.preventDefault();
+            last.focus();
+          }
+        } else if (active === last || !withinOverlay) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     };
 
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
+      trigger?.focus();
     };
   }, [menuOpen, closeMenu]);
 
@@ -93,6 +128,7 @@ export function MarketingHeader({
                 type="button"
                 variant="ghost"
                 size="icon"
+                ref={triggerRef}
                 className="marketing-header__menu-btn md:hidden"
                 aria-expanded={menuOpen}
                 aria-controls={menuId}
@@ -113,6 +149,7 @@ export function MarketingHeader({
 
       {isLanding && menuOpen ? (
         <div
+          ref={overlayRef}
           className="marketing-menu-overlay"
           role="dialog"
           aria-modal="true"
@@ -126,6 +163,7 @@ export function MarketingHeader({
               type="button"
               variant="ghost"
               size="icon"
+              ref={closeRef}
               className="marketing-header__menu-btn marketing-header__menu-btn--overlay"
               onClick={closeMenu}
             >

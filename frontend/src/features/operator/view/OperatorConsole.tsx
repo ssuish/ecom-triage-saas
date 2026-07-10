@@ -138,6 +138,14 @@ export function OperatorConsole() {
               <Link to="/" className="type-small text-ink-muted hover:text-ink">
                 Back to site
               </Link>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void signOutAndClearCache()}
+              >
+                Sign out
+              </Button>
               <UserButton appearance={clerkAppearance} />
             </div>
           </div>
@@ -153,7 +161,7 @@ export function OperatorConsole() {
                   })
                 }
               >
-                <SelectTrigger id={FILTER_STATUS_ID} className="h-8 min-w-[10rem]">
+                <SelectTrigger id={FILTER_STATUS_ID} className="h-8 min-w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -176,7 +184,7 @@ export function OperatorConsole() {
                   })
                 }
               >
-                <SelectTrigger id={FILTER_PRIORITY_ID} className="h-8 min-w-[10rem]">
+                <SelectTrigger id={FILTER_PRIORITY_ID} className="h-8 min-w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,6 +207,10 @@ export function OperatorConsole() {
               <p className="p-4 type-body text-destructive" role="alert">
                 {ticketsError instanceof Error ? ticketsError.message : "Failed to load tickets."}
               </p>
+            ) : !token ? (
+              <p className="p-4 type-body text-ink-muted" role="status">
+                Sign in to view the queue.
+              </p>
             ) : isGloballyEmpty ? (
               <div className="stack stack--sm p-6 text-center" role="status">
                 <p className="type-body font-medium text-ink">No tickets in queue</p>
@@ -209,17 +221,13 @@ export function OperatorConsole() {
                   Preview submit flow
                 </Link>
               </div>
-            ) : token ? (
+            ) : (
               <TicketQueueTable
                 tickets={tickets}
                 selectedId={highlightedId}
                 onSelect={handleSelectTicket}
                 hasActiveFilters={hasActiveFilters}
               />
-            ) : (
-              <p className="p-4 type-body text-ink-muted" role="status">
-                Sign in to view the queue.
-              </p>
             )}
             {ticketPage && ticketPage.total > tickets.length && (
               <div className="flex items-center justify-between border-t border-border p-3">
@@ -253,7 +261,7 @@ export function OperatorConsole() {
           <section
             ref={detailSectionRef}
             id="ticket-detail-panel"
-            className="min-h-[20rem] min-w-0 bg-surface"
+            className="min-h-80 min-w-0 bg-surface"
             aria-label="Ticket details"
           >
             {selectedId && token && userId ? (

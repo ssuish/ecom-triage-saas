@@ -3,5 +3,7 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
 });
 
 export function formatDate(iso: string): string {
-  return dateFormatter.format(new Date(iso));
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return dateFormatter.format(date);
 }

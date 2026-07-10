@@ -11,6 +11,13 @@ const FIELD_IDS: SubmitFieldIds = {
   body: "feedback_body",
 };
 
+const ERROR_IDS: SubmitFieldIds = {
+  customer_name: "customer_name_error",
+  customer_email: "customer_email_error",
+  subject: "feedback_subject_error",
+  body: "feedback_body_error",
+};
+
 const FIELD_ORDER = ["customer_name", "customer_email", "body"] as const;
 
 export function FeedbackForm() {
@@ -27,7 +34,7 @@ export function FeedbackForm() {
   } = useTicketSubmit({
     fields: [...FIELD_ORDER],
     fieldIds: FIELD_IDS,
-    errorIds: FIELD_IDS,
+    errorIds: ERROR_IDS,
     requireSubject: false,
     fixedSubject: "Product Feedback",
     bodyRequiredMessage: "Share your feedback before submitting.",

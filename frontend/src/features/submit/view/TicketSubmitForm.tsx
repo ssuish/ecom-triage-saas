@@ -11,6 +11,13 @@ const FIELD_IDS: SubmitFieldIds = {
   body: "submit_body",
 };
 
+const ERROR_IDS: SubmitFieldIds = {
+  customer_name: "submit_customer_name_error",
+  customer_email: "submit_customer_email_error",
+  subject: "submit_subject_error",
+  body: "submit_body_error",
+};
+
 const FIELD_ORDER = ["customer_name", "customer_email", "subject", "body"] as const;
 
 export function TicketSubmitForm() {
@@ -28,7 +35,7 @@ export function TicketSubmitForm() {
   } = useTicketSubmit({
     fields: [...FIELD_ORDER],
     fieldIds: FIELD_IDS,
-    errorIds: FIELD_IDS,
+    errorIds: ERROR_IDS,
   });
 
   if (submitted && submission) {

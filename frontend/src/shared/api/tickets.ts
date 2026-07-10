@@ -88,7 +88,7 @@ export function listTickets({
 }
 
 export function getTicket(id: string, token: string, signal?: AbortSignal): Promise<Ticket> {
-  return apiFetch<Ticket>(`${API_URL}/tickets/${id}`, {
+  return apiFetch<Ticket>(`${API_URL}/tickets/${encodeURIComponent(id)}`, {
     headers: { Authorization: `Bearer ${token}` },
     signal,
   });
@@ -107,7 +107,7 @@ export function assignTicket(
   token: string,
   signal?: AbortSignal,
 ): Promise<Ticket> {
-  return apiFetch<Ticket>(`${API_URL}/tickets/${id}/assign`, {
+  return apiFetch<Ticket>(`${API_URL}/tickets/${encodeURIComponent(id)}/assign`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ agent_id: agentId }),
@@ -121,7 +121,7 @@ export function saveReply(
   token: string,
   signal?: AbortSignal,
 ): Promise<Ticket> {
-  return apiFetch<Ticket>(`${API_URL}/tickets/${id}/reply`, {
+  return apiFetch<Ticket>(`${API_URL}/tickets/${encodeURIComponent(id)}/reply`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ agent_reply: agentReply }),
@@ -130,7 +130,7 @@ export function saveReply(
 }
 
 export function resolveTicket(id: string, token: string, signal?: AbortSignal): Promise<Ticket> {
-  return apiFetch<Ticket>(`${API_URL}/tickets/${id}/resolve`, {
+  return apiFetch<Ticket>(`${API_URL}/tickets/${encodeURIComponent(id)}/resolve`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({}),
@@ -143,7 +143,7 @@ export function getTicketStatus(
   token: string,
   signal?: AbortSignal,
 ): Promise<TicketStatusResponse> {
-  return apiFetch<TicketStatusResponse>(`${API_URL}/tickets/${id}/status`, {
+  return apiFetch<TicketStatusResponse>(`${API_URL}/tickets/${encodeURIComponent(id)}/status`, {
     headers: { "x-magic-token": token },
     signal,
   });

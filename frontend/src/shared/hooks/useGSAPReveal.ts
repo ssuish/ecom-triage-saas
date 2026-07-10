@@ -31,6 +31,8 @@ function getRevealMotion(variant: "fade" | "fade-wide", y?: number) {
   };
 }
 
+const CHILD_STAGGER_DELAY = 0.09;
+
 /**
  * Scroll-triggered fade-up reveal. Respects prefers-reduced-motion.
  */
@@ -73,23 +75,31 @@ export function useGSAPReveal({
           start: "top 85%",
           once: true,
           onEnter: () => {
-            children.forEach((child, index) => {
-              const childMotion = child.hasAttribute("data-reveal-wide")
+            const childMotions = children.map((child) =>
+              child.hasAttribute("data-reveal-wide")
                 ? getRevealMotion("fade-wide")
-                : revealMotion;
+                : revealMotion,
+            );
 
+            children.forEach((child, index) => {
+              const childMotion = childMotions[index];
               gsap.to(child, {
                 autoAlpha: 1,
                 y: 0,
                 duration: childMotion.duration,
                 ease: childMotion.ease,
-                delay: staggerIndex * motion.reveal.stagger + index * 0.09,
+                delay: staggerIndex * motion.reveal.stagger + index * CHILD_STAGGER_DELAY,
               });
             });
+
+            const lastIndex = children.length - 1;
+            const lastChildDuration = lastIndex >= 0
+              ? childMotions[lastIndex].duration
+              : revealMotion.duration;
             gsap.delayedCall(
               staggerIndex * motion.reveal.stagger +
-                (children.length - 1) * 0.09 +
-                revealMotion.duration,
+                lastIndex * CHILD_STAGGER_DELAY +
+                lastChildDuration,
               () => onVisibleRef.current?.(),
             );
           },

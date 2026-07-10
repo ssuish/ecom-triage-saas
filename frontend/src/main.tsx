@@ -20,6 +20,12 @@ declare module "@tanstack/react-router" {
 
 const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ?? "";
 
+if (!CLERK_KEY) {
+  throw new Error(
+    "Missing VITE_CLERK_PUBLISHABLE_KEY — set it in your environment before building/running the frontend.",
+  );
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ClerkProvider publishableKey={CLERK_KEY} appearance={clerkAppearance}>

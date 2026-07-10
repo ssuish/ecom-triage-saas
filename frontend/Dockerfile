@@ -13,6 +13,7 @@ ARG VITE_CLERK_PUBLISHABLE_KEY=
 ARG VITE_API_KEY=
 ARG VITE_TALLY_FORM_ID=
 ARG VITE_WAITLIST_COUNT=
+RUN test -n "$VITE_API_KEY" || (echo "VITE_API_KEY build arg is required" >&2 && exit 1)
 ENV VITE_API_URL=$VITE_API_URL \
     VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY \
     VITE_API_KEY=$VITE_API_KEY \
@@ -22,6 +23,8 @@ RUN pnpm run build
 
 # ---- Serve stage ----
 FROM nginx:1.27-alpine
+ARG VITE_API_URL=http://localhost:8080
+ENV CSP_API_ORIGIN=$VITE_API_URL
 RUN apk add --no-cache gettext
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
