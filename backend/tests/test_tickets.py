@@ -19,6 +19,8 @@ async def test_create_ticket_returns_201(client):
     assert data["status"] == "open"
     assert data["source"] == "form"
     assert "id" in data
+    assert "magic_token" in data
+    assert len(data["magic_token"]) == 36  # UUID4
 
 
 @pytest.mark.asyncio
@@ -35,11 +37,44 @@ async def test_create_ticket_generates_magic_token(client, db_session):
         "/tickets", json=payload, headers={"x-api-key": "test-api-key"}
     )
     assert response.status_code == 201
-    ticket_id = response.json()["id"]
+    body = response.json()
+    ticket_id = body["id"]
 
     mt = db_session.query(MagicToken).filter(MagicToken.ticket_id == ticket_id).first()
     assert mt is not None
     assert len(mt.token) == 36  # UUID4
+    assert body["magic_token"] == mt.token
+
+
+@pytest.mark.asyncio
+async def test_operator_ticket_reads_omit_magic_token(client):
+    payload = {
+        "subject": "Leak check",
+        "body": "body",
+        "customer_email": "leak@example.com",
+        "customer_name": "Leak",
+    }
+    create_resp = await client.post(
+        "/tickets", json=payload, headers={"x-api-key": "test-api-key"}
+    )
+    ticket_id = create_resp.json()["id"]
+    assert "magic_token" in create_resp.json()
+
+    list_resp = await client.get("/tickets")
+    assert list_resp.status_code == 200
+    for item in list_resp.json()["items"]:
+        assert "magic_token" not in item
+
+    get_resp = await client.get(f"/tickets/{ticket_id}")
+    assert get_resp.status_code == 200
+    assert "magic_token" not in get_resp.json()
+
+    status_resp = await client.get(
+        f"/tickets/{ticket_id}/status",
+        headers={"x-magic-token": create_resp.json()["magic_token"]},
+    )
+    assert status_resp.status_code == 200
+    assert "magic_token" not in status_resp.json()
 
 
 @pytest.mark.asyncio
@@ -299,7 +334,9 @@ async def test_customer_status_invalid_token_returns_404(client):
 
 @pytest.mark.asyncio
 @patch("app.routers.tickets.enqueue_job")
-async def test_create_ticket_enqueues_triage_when_enabled(mock_enqueue, client, monkeypatch):
+async def test_create_ticket_enqueues_triage_when_enabled(
+    mock_enqueue, client, monkeypatch
+):
     from app.routers import tickets as tickets_module
     from app.services.tasks import JobType
 
@@ -332,7 +369,12 @@ async def test_resolve_enqueues_email_when_enabled(mock_enqueue, client, monkeyp
 
     create_resp = await client.post(
         "/tickets",
-        json={"subject": "S", "body": "B", "customer_email": "r@r.com", "customer_name": "R"},
+        json={
+            "subject": "S",
+            "body": "B",
+            "customer_email": "r@r.com",
+            "customer_name": "R",
+        },
         headers={"x-api-key": "test-api-key"},
     )
     ticket_id = create_resp.json()["id"]
