@@ -2,7 +2,9 @@
 
 AI-assisted support ticketing for small teams — one queue, automatic classification, and email-backed customer updates without a heavy helpdesk.
 
-**Status:** In active development. Backend (CRUD, auth, Gemini triage, Cloud Tasks workers, Resend email, structured JSON logs) is largely done; operator console and prod deploy are in progress per the week plans.
+**Primary purpose:** [Portfolio showcase](docs/scoping-handoff.md) — live demo on kofeejan subdomains, not a micro-SaaS or internal tool.
+
+**Status:** Backend done (57 pytest tests). Frontend Phase 3 done — all four routes (`/`, `/submit`, `/operator`, `/ticket/{id}`), Clerk wired, ~46 Vitest tests; inline magic link on submit success via create-response token ([ADR-0026](docs/adr/0026-create-response-magic-token.md)). Prod deploy (Phase 4) pending: Neon, Cloud Run, Firebase, budget kill-switch.
 
 ---
 
@@ -10,17 +12,15 @@ AI-assisted support ticketing for small teams — one queue, automatic classific
 
 Triage gives a small support team a single place to handle customer requests:
 
-
 | Who          | What they get                                                                                                                             |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | **Customer** | Submit via web form; track status with a magic link (no account required).                                                       |
 | **System**   | Classifies each ticket with Gemini (category, priority, escalation, draft reply) and sends confirmation and resolution emails via Resend. |
 | **Agent**    | Sign in with Clerk; work the queue, edit the AI draft, reply, and resolve.                                                                |
 
-
 **Flow:** intake → async AI triage → confirmation email → operator console → reply and resolve → reply email → customer status page.
 
-**Not in v1:** inbound email intake, threading, SLA dashboards, attachments, role hierarchies beyond agent vs customer, multi-tenant orgs.
+**Not in scope** (permanent): inbound email intake, multi-tenant orgs, billing, SLO dashboards, real dogfooding. Also out: threading, attachments, role hierarchies beyond agent vs customer. See [scoping-handoff.md](docs/scoping-handoff.md).
 
 ---
 
@@ -74,16 +74,13 @@ flowchart TD
     FAST -->|outbound| RESEND
 ```
 
-
-
 - **One public Cloud Run backend** — app-layer auth for agents, customers, and workers (OIDC).
-- **Custom domains:** `api.yourdomain.com` → Cloud Run; `app.yourdomain.com` → Firebase Hosting.
+- **Custom domains:** `api.triage.kofeejan.com` → Cloud Run; `triage.kofeejan.com` → Firebase Hosting.
 - **Deploy identity:** manual `gcloud run deploy`; `triage-runtime@` runs the service with Secret Manager and Vertex access.
 
 ---
 
 ## Tech stack
-
 
 | Layer | Choices                                                                 |
 | ----- | ----------------------------------------------------------------------- |
@@ -93,9 +90,8 @@ flowchart TD
 | Queue | GCP Cloud Tasks (OIDC HTTP targets)                                     |
 | Email | Resend (outbound only in v1)                                    |
 | Auth  | Clerk (operators), magic tokens (customers), API key (public form)      |
-| UI    | React, Vite, TanStack Router (deferred)                                 |
+| UI    | React, Vite, TanStack Router, Clerk, shadcn/ui                          |
 | Infra | GCP Cloud Run, Cloud Tasks, Firebase Hosting, Secret Manager, Cloud Monitoring |
-
 
 ---
 
@@ -103,14 +99,18 @@ flowchart TD
 
 ```text
 backend/          FastAPI app, Alembic, tests
-frontend/         React/Vite SPA (placeholder)
+frontend/         React/Vite SPA (all four v1 routes)
 scripts/
   deploy-backend.sh   Cloud Run deploy wrapper (rightsizing + labels)
 docs/
-  triage-prd.md             Product spec
-  gcp-production-setup.md   Manual prod deploy checklist (Stages 0–5)
-  gcp-firebase-hosting.md   Firebase Hosting setup
-  gcp-monitoring-slo.md     Alerts, log metrics, POST /tickets SLO
+  README.md                 Documentation index (start here)
+  scoping-handoff.md        Portfolio direction (canonical)
+  triage-prd.md             Product spec (v3.0)
+  guides/
+    gcp-production-setup.md Manual prod deploy checklist
+    gcp-firebase-hosting.md Firebase Hosting setup
+  adr/                      Architecture decision records
+  archive/                  Historical plans + future-work refs
 ```
 
 ---
@@ -123,7 +123,7 @@ docker compose up --build
 ```
 
 - Backend: [http://localhost:8080/health](http://localhost:8080/health)  
-- Frontend: [http://localhost:3000](http://localhost:3000) (health-check placeholder)
+- Frontend: [http://localhost:3000](http://localhost:3000)
 - Database: Docker Postgres — not Neon
 
 Local triage runs **synchronously** with `CLOUD_TASKS_ENABLED=false` (no GCP queue required). Creating a ticket calls Gemini inline and returns classification fields on the `201` response.
@@ -165,26 +165,27 @@ cd backend && uv sync --dev && uv run pytest tests/ -v
 
 ## Deployment (overview)
 
-Production path ([ADR-0019](docs/adr/0019-cloud-run-firebase-hosting-production.md)):
+**Portfolio minimal path** ([scoping-handoff.md](docs/scoping-handoff.md), [ADR-0019](docs/adr/0019-cloud-run-firebase-hosting-production.md)) — not full Stage 0–5 production checklist:
 
-1. Neon database (future) + manual migrations when prod DB exists
-2. **Cloud Run** — FastAPI backend at `api.yourdomain.com` (120s timeout, 512Mi/1 CPU, max 5 instances)
-3. **Firebase Hosting** — React SPA at `app.yourdomain.com`
+1. Neon Postgres + manual migrations
+2. **Cloud Run** — FastAPI at `api.triage.kofeejan.com` (120s timeout, 512Mi/1 CPU, max 5 instances)
+3. **Firebase Hosting** — React SPA at `triage.kofeejan.com`
 4. Cloud Tasks queues (`triage-queue`, `email-queue`) with OIDC invoker SA
 5. Resend outbound domain
-6. **Observability** — structured JSON logs ([ADR-0007](docs/adr/0007-structured-logs-and-one-alert.md)); Cloud Monitoring alerts on email failures, triage fallback, worker auth; SLO on `POST /tickets` > 99% / 7d ([gcp-monitoring-slo.md](docs/gcp-monitoring-slo.md))
-7. **Cost controls** — GCP budget alert, resource labels (`env=prod`, `app=triage`, `team=solo`)
+6. **Observability** — structured JSON logs ([ADR-0007](docs/adr/0007-structured-logs-and-one-alert.md)); two alerts only: `email_send_failed` ([ADR-0021](docs/adr/0021-cloud-monitoring-email-alert.md)) + $5/mo budget kill-switch ([ADR-0023](docs/adr/0023-budget-triggered-kill-switch-for-public-demo.md)). Full SLO stack is [archived future work](docs/archive/gcp-monitoring-slo.md) ([ADR-0025](docs/adr/0025-monitoring-slo-scope-cut-for-portfolio.md)).
+7. **Cost controls** — $5/mo GCP budget → Pub/Sub → scale Cloud Run to 0; resource labels (`env=prod`, `app=triage`, `team=solo`)
+8. **Demo data** — `scripts/seed_agent.py` + `scripts/seed_demo.py` (synthetic tickets for smoke test)
 
 **Deploy backend** (sets `GOOGLE_GENAI_USE_VERTEXAI=true`, `GEMINI_MODEL=gemini-3.1-flash-lite-preview`, Vertex via `triage-runtime@` — no prod `GEMINI_API_KEY`):
 
 ```bash
 export PROJECT_ID=your-gcp-project-id
-export API_DOMAIN=https://api.yourdomain.com
-export APP_DOMAIN=https://app.yourdomain.com
+export API_DOMAIN=https://api.triage.kofeejan.com
+export APP_DOMAIN=https://triage.kofeejan.com
 ./scripts/deploy-backend.sh
 ```
 
-Full checklist: [docs/gcp-production-setup.md](docs/gcp-production-setup.md) (Stages 0–5). Firebase: [docs/gcp-firebase-hosting.md](docs/gcp-firebase-hosting.md).
+Checklist: [docs/guides/gcp-production-setup.md](docs/guides/gcp-production-setup.md). Firebase: [docs/guides/gcp-firebase-hosting.md](docs/guides/gcp-firebase-hosting.md). Doc index: [docs/README.md](docs/README.md).
 
 **Solo dev ladder:** `feature/*` → PR → `main` (CI) → manual promote → prod.
 
@@ -196,14 +197,12 @@ See [CONTEXT.md](CONTEXT.md) for domain terms. ADRs 0014, 0015, 0018 describe th
 
 ## Roadmap
 
-
 | Phase | Focus                                                            |
 | ----- | ---------------------------------------------------------------- |
 | 1     | Models, migrations, ticket CRUD, Clerk + magic token, rate limit |
 | 2     | Gemini triage, Cloud Tasks workers, Resend outbound              |
-| 3     | Operator console, customer status page, public form              |
+| 3     | Operator console, customer status page, public form (inline magic link via create-response token) |
 | 4     | GCP + Firebase production deploy, end-to-end smoke test          |
-
 
 ---
 
