@@ -23,6 +23,8 @@ RUN pnpm run build
 
 # ---- Serve stage ----
 FROM nginx:1.27-alpine
+ARG VITE_API_URL=http://localhost:8080
+ENV CSP_API_ORIGIN=$VITE_API_URL
 RUN apk add --no-cache gettext
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
