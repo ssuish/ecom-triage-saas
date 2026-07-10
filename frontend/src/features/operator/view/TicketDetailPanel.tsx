@@ -35,7 +35,8 @@ export function TicketDetailPanel({ ticketId, token, authUserId, agents }: Ticke
   useEffect(() => {
     if (!ticket) return;
     setReplyDraft(ticket.agent_reply ?? ticket.ai_draft_reply ?? "");
-  }, [ticket]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset draft only on ticket change, not on background cache updates to the same ticket
+  }, [ticket?.id]);
 
   if (isLoading) {
     return <DetailPanelSkeleton />;
@@ -115,7 +116,7 @@ export function TicketDetailPanel({ ticketId, token, authUserId, agents }: Ticke
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="unassigned">Unassigned</SelectItem>
+            <SelectItem value="unassigned" disabled>Unassigned</SelectItem>
             {agents.map((agent) => (
               <SelectItem key={agent.id} value={agent.id}>
                 {agent.name}

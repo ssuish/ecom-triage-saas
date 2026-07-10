@@ -77,7 +77,9 @@ export function TicketQueueTable({
     const selectedIndex = tickets.findIndex((ticket) => ticket.id === selectedId);
     if (selectedIndex >= 0) {
       setFocusIndex(selectedIndex);
+      return;
     }
+    setFocusIndex((current) => Math.max(0, Math.min(current, tickets.length - 1)));
   }, [selectedId, tickets]);
 
   const setRowRef = useCallback((id: string, element: HTMLTableRowElement | null) => {

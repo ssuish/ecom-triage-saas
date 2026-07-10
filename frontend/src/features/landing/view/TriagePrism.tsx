@@ -30,6 +30,7 @@ export function TriagePrism({ onStateChange, className }: TriagePrismProps = {})
   const [announcement, setAnnouncement] = useState("");
   const [hint, setHint] = useState("Run demo");
   const autoplayRef = useRef(false);
+  const triageTimeoutRef = useRef<number | null>(null);
 
   const runTriage = useCallback(() => {
     if (prefersReducedMotion) {
@@ -43,7 +44,11 @@ export function TriagePrism({ onStateChange, className }: TriagePrismProps = {})
     setHint("Triaging…");
     setSweeping(true);
     setAnnouncement("");
-    window.setTimeout(() => {
+    if (triageTimeoutRef.current !== null) {
+      window.clearTimeout(triageTimeoutRef.current);
+    }
+    triageTimeoutRef.current = window.setTimeout(() => {
+      triageTimeoutRef.current = null;
       setTriaged(true);
       setSweeping(false);
       setHint("Replay demo");
@@ -62,6 +67,15 @@ export function TriagePrism({ onStateChange, className }: TriagePrismProps = {})
     const timer = window.setTimeout(runTriage, AUTOPLAY_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [runTriage]);
+
+  useEffect(() => {
+    return () => {
+      if (triageTimeoutRef.current !== null) {
+        window.clearTimeout(triageTimeoutRef.current);
+        triageTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     onStateChange?.({ sweeping, triaged });
@@ -178,7 +192,7 @@ export function TriagePrism({ onStateChange, className }: TriagePrismProps = {})
               <span className="badge badge--in-progress">Shipping</span>
               <span className="badge badge--priority-high">High</span>
             </div>
-            <div data-triage-enter className="ai-provenance stack stack--sm !rounded-none !border-0 !p-4">
+            <div data-triage-enter className="ai-provenance ai-provenance--flush stack stack--sm">
               <p className="ai-badge mb-2">AI triage</p>
               <p className="type-body font-medium text-ink">
                 Undelivered order — shipment lookup needed
@@ -188,7 +202,7 @@ export function TriagePrism({ onStateChange, className }: TriagePrismProps = {})
                 implied — prioritize carrier check and delivery update.
               </p>
             </div>
-            <div data-triage-enter className="ai-provenance stack stack--sm !rounded-none !border-0 !p-4">
+            <div data-triage-enter className="ai-provenance ai-provenance--flush stack stack--sm">
               <p className="ai-badge mb-2">Draft reply</p>
               <p className="type-small leading-relaxed text-ink-muted">
                 Hi Sarah — thanks for reaching out. I found order #48291 and see it&apos;s still in

@@ -29,7 +29,7 @@ export function validateSubmit(
   }
   if (requireSubject && !values.subject.trim()) {
     errors.subject = "Subject is required.";
-  } else if (requireSubject && values.subject.trim().length > MAX_SUBJECT_LENGTH) {
+  } else if (values.subject.trim().length > MAX_SUBJECT_LENGTH) {
     errors.subject = `Subject must be ${MAX_SUBJECT_LENGTH} characters or fewer.`;
   }
   if (!values.body.trim()) {
